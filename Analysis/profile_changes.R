@@ -1,0 +1,216 @@
+library(ppcor)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(reshape2)
+
+
+staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
+  mutate(date = as_date(date))
+
+#replace S by 1, R by 2. This way, a mean value of 2 between two samples for a given abx implies a change in resistance
+#that approach allows me to ignore NA values in the comparison
+staph_isolates_sr = staph_isolates[,-c(1:5)]
+staph_isolates_sr[staph_isolates_sr == "S"] = 1
+staph_isolates_sr[staph_isolates_sr == "R"] = 3
+staph_isolates_sr = apply(staph_isolates_sr, c(1,2), as.numeric)
+
+staph_isolates[,-c(1:5)] = staph_isolates_sr
+
+#assumption: only keep antibiotics with more than 50 results (S or I)
+good_cols = which(colSums(staph_isolates_sr, na.rm = T) > 50)
+good_rows = which(rowSums(staph_isolates_sr, na.rm = T) > 0)
+
+staph_isolates_profiles = staph_isolates %>%
+  select(c(1:5,(good_cols+5)))
+
+staph_isolates_profiles = staph_isolates_profiles %>%
+  filter(row_number() %in% good_rows)
+
+#only keep patients with more than one sample
+good_ids = staph_isolates_profiles %>%
+  group_by(project_id) %>%
+  summarise(n = n()) %>%
+  filter(n > 1) %>%
+  select(project_id) %>%
+  pull
+
+staph_isolates_profiles = staph_isolates_profiles %>%
+  filter(project_id %in% good_ids)
+
+
+interesting_samples = c()
+
+#heavy lifting here
+#for each row, if the patient, species and source are the same, compare the resistance profiles
+#if there is any 2 in the comparison, that indicates a difference, and is recorded
+for(i in 1:(nrow(staph_isolates_profiles)-1)){
+  
+  if(staph_isolates_profiles$project_id[i] != staph_isolates_profiles$project_id[i+1]) next
+  if(staph_isolates_profiles$SpeciesName[i] != staph_isolates_profiles$SpeciesName[i+1]) next
+  if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
+  
+  #extract the two profiles compared
+  tt = staph_isolates_profiles[c(i:(i+1)),-c(1:5)]
+  #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
+  test_means = apply(tt, 2, mean)
+  #if any value is 2, that indicates a change in resistance profile, record it
+  #note in theory there would be duplication if sample 1 is diff from sample 2, and sample 2 is diff from sample 3 (sample 2 would be recorded twice)
+  if(any(test_means == 2, na.rm = T)) interesting_samples = c(interesting_samples,
+                                                              staph_isolates_profiles$project_lab_id[i],
+                                                              staph_isolates_profiles$project_lab_id[i+1])
+}
+
+
+#this is a list of samples, where: samples are from the same patient, the same source (eg nose), the same species (mrsa or mssa),
+# but show a different resistant profile. No limits on dates currently, just have to be subsequent in the data (ie sample is different from
+# the one immediately before it chronologically)
+changing_profiles = staph_isolates_profiles %>%
+  filter(project_lab_id %in% interesting_samples)
+
+
+
+
+profile_changes = data.frame(project_id = "test_id",
+                             species = "test", 
+                             source = "test",
+                             first_date = changing_profiles$date[1],
+                             first_lab_id = "test",
+                             second_date = changing_profiles$date[1],
+                             second_lab_id = "test",
+                             antibiotic = "test",
+                             change = 0)
+
+for(i in 1:(nrow(changing_profiles)-1)){
+  
+  if(changing_profiles$project_id[i] != changing_profiles$project_id[i+1]) next
+  if(changing_profiles$SpeciesName[i] != changing_profiles$SpeciesName[i+1]) next
+  if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
+  
+  #extract the two profiles compared
+  tt = changing_profiles[c(i:(i+1)),-c(1:5)]
+  #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
+  check = which(apply(tt, 2, mean) == 2)
+  #needs a quick check because of the way this dataset was compiled
+  #2 subsequent rows may not correspond to 2 different profiles!
+  #eg if sample 1 and sample 2 are diff, but sample 2 and 3 are not, and sample 3 and 4 are, the dataset would still list: sample 1 2 3 4
+  #yet, comparison between samples 2 and 3 in this loop would crash because they're identical
+  if(length(check) == 0) next
+  
+  tt = tt %>%
+    select(all_of(check))
+  
+  for(j in 1:ncol(tt)){
+    profile_changes = rbind(profile_changes,
+                            data.frame(project_id = changing_profiles$project_id[i],
+                                       species = changing_profiles$SpeciesName[i],
+                                       source = changing_profiles$SpecimenType[i],
+                                       first_date = changing_profiles$date[i],
+                                       first_lab_id = changing_profiles$project_lab_id[i],
+                                       second_date = changing_profiles$date[i+1],
+                                       second_lab_id = changing_profiles$project_lab_id[i+1],
+                                       antibiotic = colnames(tt)[j],
+                                       change = tt[1,j] - tt[2,j]))
+  }
+  
+}
+
+#remove the 1st test row used to setup the dataframe
+profile_changes = profile_changes[-1,]
+
+#this new dataset should contain all the resistance changes between isolates
+
+#need to look whether events are during a single hospitalisation event, or if patients were discharged in the meantime
+#if discharged in the meantime, reinfection by someone else would be an explanation
+admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
+  mutate(start_datetime = as_date(start_datetime)) %>%
+  mutate(end_datetime = as_date(end_datetime)) %>%
+  arrange(project_id, start_datetime) %>%
+  filter(project_id %in% unique(profile_changes$project_id)) %>%
+  filter(!is.na(start_datetime)) %>%
+  filter(!is.na(end_datetime))
+
+profile_changes$same_hosp = F
+
+for(i in 1:nrow(profile_changes)){
+  
+  admissions_i = admissions %>%
+    filter(project_id == profile_changes$project_id[i])
+  
+  if(dim(admissions_i)[1] == 0) next
+  
+  for(j in 1:nrow(admissions_i)){
+    
+    if(profile_changes$first_date[i] >= admissions_i$start_datetime[j] && profile_changes$second_date[i] <= admissions_i$end_datetime[j]) profile_changes$same_hosp[i] = T
+    
+  }
+  
+}
+
+
+#add column to say if varying profiles come from the same single sample (matching times)
+profile_changes = profile_changes %>%
+  mutate(same_sample = (first_date == second_date))
+
+
+#add column to check if could be nosocomial
+#decided if there is a matching resistance profile in any patient within 1 week before the change is detected
+
+#check if patient was in ward with anyone else with s aureus (null hypothesis)
+
+staph_isolates_profiles[is.na(staph_isolates_profiles)] = 0
+profile_changes$possible_nos = 0
+for(i in 1:(nrow(profile_changes))){
+  
+  hosp_i = admissions %>%
+    filter(project_id == profile_changes$project_id[i])
+  
+  if(nrow(hosp_i) == 0) next
+  
+  hosp_i = hosp_i %>%
+    mutate(valid = (profile_changes$second_date[i] %within% interval(start_datetime, end_datetime))) %>%
+    filter(valid == T)
+  
+  if(nrow(hosp_i) == 0) next
+  
+  #only take patients which were hospitalised in the same ward within the 7 days before the 2nd sample was taken for the patient of interest
+  hosp_j = admissions %>%
+    filter(ward_code == hosp_i$ward_code[1]) %>%
+    mutate(valid = int_overlaps(interval(start_datetime, end_datetime), interval((profile_changes$second_date[i]-7), profile_changes$second_date[i]))) %>%
+    filter(valid == T) %>%
+    filter(project_id != profile_changes$project_id[i])
+  
+  if(nrow(hosp_j) == 0) next
+  
+  #from those patients, only look at any sample taken 7 days before the 2nd sample was taken for the patient of interest
+  test_samples = staph_isolates_profiles %>%
+    filter(project_id %in% unique(hosp_j$project_id)) %>%
+    filter(date <= profile_changes$second_date[i] & date > (profile_changes$second_date[i]-7)) %>%
+    select(-c(2:5))
+  
+  if(nrow(test_samples) == 0) next
+  
+  sample_i = staph_isolates_profiles %>%
+    filter(project_lab_id == profile_changes$second_lab_id[i]) %>%
+    .[1,] %>%
+    select(-c(1:5))
+  
+  already_checked_patient = c()
+  
+  for(j in 1:nrow(test_samples)){
+    if(sum(test_samples[j,-1] - sample_i, na.rm = T) == 0 & !(test_samples[j,-1] %in% already_checked_patient)){
+      #extra check to avoid double counting (otherwise if a patient is tested twice and matches target twice, would be double counted)
+      already_checked_patient = c(already_checked_patient, test_samples[j,-1])
+      profile_changes$possible_nos[i] = profile_changes$possible_nos[i] + 1
+    }
+  }
+  
+}
+
+
+profile_changes = profile_changes %>%
+  mutate(change = replace(change, change == -2, "R")) %>%
+  mutate(change = replace(change, change == "2", "S"))
+
+write.csv(profile_changes, here::here("Clean", "profile_changes.csv"), row.names = F)
