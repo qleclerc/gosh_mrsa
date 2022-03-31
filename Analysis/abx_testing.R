@@ -9,6 +9,9 @@ library(corrplot)
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
+#the line to remove all isolates with NAs only (ie nothing tested at all)
+#staph_isolates = staph_isolates[!apply(staph_isolates[,6:59], 1, function(x) all(is.na(x))),]
+
 staph_isolates_m = staph_isolates %>%
   #filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
   #filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
@@ -18,21 +21,23 @@ staph_isolates_m = staph_isolates %>%
   mutate(date = floor_date(date, "month")) %>%
   group_by(date, variable) %>%
   summarise(n = n()) %>%
-  filter(n > 10) %>%
   filter(variable %in%c("Amikacin", "Amik.Fluclox", "Chloramphenicol", "Erythromycin",
                         "Ciprofloxacin", "Flucloxacillin", "Fucidin", "Gentamicin",
                         "Gent.Cipro", "Linezolid", "Mupirocin","Penicillin", "Rifampicin",
                         "Teicoplanin", "Tetracycline", "Trimethoprim", "Vancomycin"))
 
 isolates_per_day = staph_isolates %>%
+  #filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
+  #filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
   mutate(date = floor_date(date, "month")) %>%
   group_by(date) %>%
   summarise(total = n())
 
 staph_isolates_m = left_join(staph_isolates_m, isolates_per_day, by = "date")
 
-ggplot(staph_isolates_m ) +
+ggplot(staph_isolates_m) +
   geom_line(aes(date, n/total, colour = variable)) +
+  scale_y_continuous(limits = c(0,1)) +
   theme_bw()
 
 

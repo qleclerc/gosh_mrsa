@@ -8,7 +8,7 @@ antibiograms = read.csv(here::here("Data" ,"labanalysis_patient_microbiology_pos
 
 #assumption: species names in that list only are s aureus
 staph_isolates = antibiograms %>%
-  filter(SpeciesName %in% c("Staphylococcus aureus", "Staphylococcus sp.", "Staphylococcus sp", "Methicillin-Resistant Staphylococcus aureus"))
+  filter(SpeciesName %in% c("Staphylococcus aureus", "Methicillin-Resistant Staphylococcus aureus"))
 
 staph_isolates[staph_isolates == ""] = NA
 
