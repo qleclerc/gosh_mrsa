@@ -6,7 +6,7 @@ data2 = read.csv(here::here("Data", "datalake_patient_selected_medication_admins
 
 data = rbind(data, data2)
 
-tt = data[grepl("ANCOMYCIN", data$drug_name),]
+tt = data[grepl("EICOPLAN", data$drug_name),]
 nrow(tt)/nrow(data)*100
 
 length(unique(tt$project_id))/length(unique(data$project_id))*100

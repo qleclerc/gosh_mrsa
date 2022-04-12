@@ -3,184 +3,112 @@ library(dplyr)
 library(lubridate)
 library(reshape2)
 library(ggplot2)
-library(cowplot)
 library(Hmisc)
 library(corrplot)
+library(cowplot)
 
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
-staph_resistances = staph_isolates %>%
-  select(5:59) %>%
-  melt(.,id.vars = "date") %>%
-  filter(!is.na(value)) %>%
-  filter(value %in% c("S", "R")) %>%
-  mutate(date = floor_date(date, "month")) %>%
-  arrange(date) %>%
-  group_by(date, variable, value) %>%
-  summarise(n = n()) %>%
-  mutate(prop = n/sum(n)) %>%
-  mutate(variable = as.character(variable))
+#number of resistances per isolate
+staph_isolates$n_res = apply(staph_isolates[,-c(1:5)], 1, function(x) sum(x == "R", na.rm = T))
+#number of resistance tested for per isolate
+staph_isolates$n_test = apply(staph_isolates[,-c(1:5, 60)], 1, function(x) sum(!is.na(x)))
 
+staph_isolates = staph_isolates[,c(1:5, 60, 61)]
 
-resistances = unique(staph_resistances$variable)
-
-for(i in c(1,10,19,28,37,44)){
-  
-  pp = staph_resistances %>%
-    filter(value == "R") %>%
-    filter(variable %in% resistances[(i):(i+8)]) %>%
-    ggplot() +
-    geom_line(aes(date, n, colour = variable)) +
-    theme_bw()
-  
-  plot(pp)
-  
-}
-
-good_resistances = c("Amikacin", "Amik.Fluclox", "Chloramphenicol", "Erythromycin",
-                     "Ciprofloxacin", "Flucloxacillin", "Fucidin", "Gentamicin",
-                     "Gent.Cipro", "Linezolid", "Mupirocin",
-                     "Neomycin", "Nitrofurantoin", "Penicillin", "Rifampicin",
-                     "Teicoplanin", "Tetracycline", "Trimethoprim", "Vancomycin")
-
-staph_resistances = staph_resistances %>%
-  filter(variable %in% good_resistances)
-
-
-pa = staph_resistances %>%
-  filter(value == "R") %>%
-  filter(variable %in% c("Amikacin", "Amik.Fluclox", "Flucloxacillin", "Ciprofloxacin")) %>%
-  ggplot() +
-  geom_line(aes(date, prop, colour = variable)) +
+#link between number of tests and resistances
+p1 = ggplot(staph_isolates) +
+  geom_jitter(aes(n_test, n_res, colour = SpeciesName), alpha = 0.3) +
+  geom_smooth(data = staph_isolates %>% 
+                filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus"),
+              aes(n_test, n_res), method = "lm", colour = "red") +
+  geom_smooth(data = staph_isolates %>%
+                filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"),
+              aes(n_test, n_res), method = "lm", colour = "blue") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   theme_bw() +
-  scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of resistant isolates", colour = "Antibiotic:")
+  labs(x = "Number of tested resistances", y = "Number of reported resistances",
+       colour = "") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0,30,5))
 
-pb = staph_resistances %>%
-  filter(value == "R") %>%
-  filter(variable %in% c("Gentamicin", "Gent.Cipro", "Rifampicin", "Chloramphenicol")) %>%
+#significant correlation, but r^2 = 0.14 and 0.34 suggesting not all var in n res explained by n tests 
+summary(lm(data = staph_isolates %>% 
+             filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus"),
+           n_res ~ n_test))
+summary(lm(data = staph_isolates %>% 
+             filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"),
+           n_res ~ n_test))
+
+#how many isolates with no reported resistance?
+sum(staph_isolates$n_test == 0)
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
+
+#how many isolates with n reported resistance == n tested resistance
+sum(staph_isolates$n_test == staph_isolates$n_res)
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"])
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"])
+
+
+p2 = staph_isolates %>%
+  mutate(date = floor_date(date, "year")) %>%
+  group_by(date, SpeciesName) %>%
+  mutate(q25_res = quantile(n_res, 0.25)) %>%
+  mutate(q75_res = quantile(n_res, 0.75)) %>%
+  mutate(median_res = median(n_res)) %>%
+  group_by(date, SpeciesName) %>%
+  summarise(q25_res = mean(q25_res),
+            q75_res = mean(q75_res),
+            median_res = mean(median_res)) %>%
   ggplot() +
-  geom_line(aes(date, prop, colour = variable)) +
+  geom_point(aes(date, median_res, colour = SpeciesName)) +
+  geom_errorbar(aes(x = date, ymin = q25_res, ymax = q75_res, colour = SpeciesName),
+                alpha = 0.7) +
   theme_bw() +
-  scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of resistant isolates", colour = "Antibiotic:")
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12)) +
+  labs(x = "Time (years)", y = "Number of reported resistances")
 
-pc = staph_resistances %>%
-  filter(value == "R") %>%
-  filter(variable %in% c("Fucidin", "Erythromycin", "Trimethoprim")) %>%
+p3 = staph_isolates %>%
+  mutate(date = floor_date(date, "year")) %>%
+  group_by(date, SpeciesName) %>%
+  mutate(q25_test = quantile(n_test, 0.25)) %>%
+  mutate(q75_test = quantile(n_test, 0.75)) %>%
+  mutate(median_test = median(n_test)) %>%
+  group_by(date, SpeciesName) %>%
+  summarise(q25_test = mean(q25_test),
+            q75_test = mean(q75_test),
+            median_test = mean(median_test)) %>%
   ggplot() +
-  geom_line(aes(date, prop, colour = variable)) +
+  geom_point(aes(date, median_test, colour = SpeciesName)) +
+  geom_errorbar(aes(x = date, ymin = q25_test, ymax = q75_test, colour = SpeciesName),
+                alpha = 0.7) +
   theme_bw() +
-  scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of resistant isolates", colour = "Antibiotic:")
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position = "bottom") +
+  labs(x = "Time (years)", y = "Number of tested resistances", colour = "")
 
-pd = staph_resistances %>%
-  filter(value == "R") %>%
-  filter(variable %in% c("Mupirocin", "Penicillin", "Tetracycline")) %>%
-  ggplot() +
-  geom_line(aes(date, prop, colour = variable)) +
-  theme_bw() +
-  scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of resistant isolates", colour = "Antibiotic:")
+pall = plot_grid(p1 + theme(legend.position = "none"),
+                 NULL,
+                 plot_grid(p2 + theme(legend.position = "none"),
+                           NULL,
+                           p3 + theme(legend.position = "none"),
+                           ncol = 3,
+                           labels = c("b)", "", "c)"),
+                           rel_widths = c(1,0.05,1),
+                           label_size = 12,
+                           hjust = 0),
+                 get_legend(p3),
+                 rel_heights = c(1.2,0.05,1,0.1),
+                 labels = c("a)"),
+                 nrow = 4,
+                 label_size = 12,
+                 hjust = 0)
 
-plot_grid(pa, pb, pc, pd,
-          ncol = 2, labels = c("a)", "b)", "c)", "d)"))
-
-ggsave(here::here("Figures", "fig2.png"))
-
-#supp
-staph_resistances %>%
-  filter(value == "R") %>%
-  filter(variable %in% c("Teicoplanin", "Nitrofurantoin", "Neomycin", "Vancomycin","Linezolid")) %>%
-  ggplot() +
-  geom_line(aes(date, prop, colour = variable)) +
-  theme_bw() +
-  scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of resistant isolates", colour = "Antibiotic:")
-
-ggsave(here::here("Figures", "suppfig1.png"))
-
-
-#correlations
-cor_res = staph_resistances %>%
-  filter(value == "R") %>%
-  dcast(., date~variable, value.var = "prop", fill = 0) %>%
-  select(-"date")
-
-cor_res = rcorr(as.matrix(cor_res))
-cor_res$P[is.na(cor_res$P)] = 0.04
-cor_res$P[which(cor_res$P < 0.05)] = 1
-cor_res$P[which(cor_res$P != 1)] = 0
-
-cor_res$r = cor_res$r * cor_res$P
-
-png(here::here("Figures", "suppfig2.png"), width = 1100, height = 701)
-corrplot(cor_res$r,
-         method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
-dev.off()
-
-#investigate high risk of ARG transduction in phage therapy 
-#in of risk phage therapy
-#investigate high ARG transduction
-
-## antibiotic classes ####
-
-# abx_classes = data.frame(variable = c("Amik.Fluclox", "Amikacin", "Ampicillin", 
-#                                       "Augmentin", "Cefotaxime", "Ceftazidime","Cephradine",
-#                                       "Chloramphenicol", "Ciprofloxacin", "Colistin",
-#                                       "Erythromycin", "Flucloxacillin", 
-#                                       "Fucidin", "Gent.Ceftaz", "Gent.Cipro", "Gent.Pip.Taz",
-#                                       "Gentamicin", "Mupirocin", "Naladixic.Acid",
-#                                       "Neomycin", "Nitrofurantoin", "Penicillin",
-#                                       "Piperacillin...Tazobactam", "Pip.Taz.Amik",
-#                                       "Pip.Taz.Cipro", "Rifampicin", "Teicoplanin",
-#                                       "Tetracycline", "Trimethoprim", "Vancomycin",
-#                                       "Sulphonamide", "Oxacillin", "Pristinomycin",
-#                                       "Tobramycin", "Mecillinam", "Syncercid",
-#                                       "Ceftriaxone", "Septrin", "Cefuroxime",
-#                                       "Linezolid", "Clindamycin", "Timentin",
-#                                       "Imipenem", "Meropenem", "Tigecycline",
-#                                       "Daptomycin", "Doxycycline", "Minocycline",
-#                                       "Fosfomycin", "Metronidazole", "Cefoxitin",
-#                                       "Co.Trimoxazole..Septrin."),
-#                          class = c("Mixed", 
-#                                    "Aminoglycosides", "Penicillins", "Penicillins",
-#                                    "Cephalosporins", "Cephalosporins", "Cephalosporins",
-#                                    "Chloramphenicol", "Fluoroquinolones", "Polypetides",
-#                                    "Macrolides", "Penicillins", "Fucidin", "Mixed", 
-#                                    "Mixed", "Mixed", "Aminoglycosides", "Mupirocin",
-#                                    "Fluoroquinolones", "Aminoglycosides",
-#                                    "Nitrofurans", "Penicillins", "Mixed", "Mixed", 
-#                                    "Mixed", "Antimycobacterials", "Glycopeptides",
-#                                    "Tetracyclines", "Trimethoprim", "Glycopeptides",
-#                                    "Sulphonamides", "Penicillins", "Pristinomycin", 
-#                                    "Aminoglycosides", "Penicillins", "Syncercid",
-#                                    "Cephalosporins", "Sulfonamides", "Cephalosporins",
-#                                    "Oxazolidinones", "Lincosamides", "Mixed",
-#                                    "Carbapenems", "Carbapenems", "Tigecycline",
-#                                    "Lipopetides", "Tetracyclines", "Tetracyclines",
-#                                    "Fosfomycin", "Metronidazole", "Cephalosporins", 
-#                                    "Sulfonamides"))
-# 
-# staph_resistances = left_join(staph_resistances, abx_classes, by = "variable")
-# 
-# classes = unique(staph_resistances$class)
-# 
-# for(i in c(1,4,7,10,12)){
-#   
-#   pp = staph_resistances %>%
-#     group_by(date, class, value) %>%
-#     summarise(n = sum(n)) %>%
-#     mutate(prop = n/sum(n)) %>%
-#     filter(value == "R") %>%
-#     filter(class %in% classes[i:(i+2)]) %>%
-#     ggplot() +
-#     geom_line(aes(date, prop, colour = class)) +
-#     theme_bw() +
-#     scale_y_continuous(limits = c(0,1))
-#   
-#   plot(pp)
-#   
-# }
-# 
+ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 8)
