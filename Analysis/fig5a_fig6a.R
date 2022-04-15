@@ -11,8 +11,7 @@ staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
 
 #only keep patients with more than one sample
 good_ids = staph_isolates %>%
-  group_by(project_id) %>%
-  summarise(n = n()) %>%
+  count(project_id) %>%
   filter(n > 1) %>%
   select(project_id) %>%
   pull
@@ -22,11 +21,11 @@ staph_isolates_profiles = staph_isolates %>%
 
 interesting_samples = c()
 
-#for each row, if the patient and source are the same, compare species
+#for each row, if the patient is the same, compare species
 for(i in 1:(nrow(staph_isolates_profiles)-1)){
   
   if(staph_isolates_profiles$project_id[i] != staph_isolates_profiles$project_id[i+1]) next
-  if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
+  # if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
   
   if(staph_isolates_profiles$SpeciesName[i] != staph_isolates_profiles$SpeciesName[i+1]){
     interesting_samples = c(interesting_samples,
@@ -42,7 +41,8 @@ changing_profiles = staph_isolates_profiles %>%
   filter(project_lab_id %in% interesting_samples)
 
 profile_changes = data.frame(project_id = "test_id",
-                             source = "test",
+                             first_source = "test",
+                             second_source = "test",
                              first_date = changing_profiles$date[1],
                              second_date = changing_profiles$date[1],
                              change = 0)
@@ -50,15 +50,20 @@ profile_changes = data.frame(project_id = "test_id",
 for(i in 1:(nrow(changing_profiles)-1)){
   
   if(changing_profiles$project_id[i] != changing_profiles$project_id[i+1]) next
-  if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
+  # if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
   
-  profile_changes = rbind(profile_changes,
-                          data.frame(project_id = changing_profiles$project_id[i],
-                                     source = changing_profiles$SpecimenType[i],
-                                     first_date = changing_profiles$date[i],
-                                     second_date = changing_profiles$date[i+1],
-                                     change = changing_profiles$SpeciesName[i]))
-  
+  #rechecking as sometimes multiple samples with same lab id, but no change
+  #eg sample 1 mssa, sample 2 mssa and mrsa, don't want to record mssa -> mssa change
+  if(changing_profiles$SpeciesName[i] != changing_profiles$SpeciesName[i+1]){
+    
+    profile_changes = rbind(profile_changes,
+                            data.frame(project_id = changing_profiles$project_id[i],
+                                       first_source = changing_profiles$SpecimenType[i],
+                                       second_source = changing_profiles$SpecimenType[i+1],
+                                       first_date = changing_profiles$date[i],
+                                       second_date = changing_profiles$date[i+1],
+                                       change = changing_profiles$SpeciesName[i]))
+  }
 }
 
 #remove the 1st test row used to setup the dataframe
@@ -94,26 +99,35 @@ for(i in 1:nrow(profile_changes)){
 }
 
 
-#add column to say if varying profiles come from the same single sample (matching times)
+#add column to say if varying profiles come from the same date
 profile_changes = profile_changes %>%
-  mutate(same_sample = (first_date == second_date))
+  mutate(same_date = (first_date == second_date))
+
+#add column to say if varying profiles come from the same sample source
+profile_changes = profile_changes %>%
+  mutate(same_source = (first_source == second_source))
 
 #add column to check if could be nosocomial
 #decided if there is a matching resistance profile in any patient within 1 week before the change is detected
 profile_changes$possible_nos = 0
+profile_changes$possible_nos_ward = ""
+
 for(i in 1:(nrow(profile_changes))){
   
+  #which hospitals admissions are recorded for patient i
   hosp_i = admissions %>%
     filter(project_id == profile_changes$project_id[i])
   
   if(nrow(hosp_i) == 0) next
   
+  #which hospital admissions align with the change detected
   hosp_i = hosp_i %>%
     mutate(valid = (profile_changes$second_date[i] %within% interval(start_datetime, end_datetime))) %>%
     filter(valid == T)
   
   if(nrow(hosp_i) == 0) next
   
+  #which other patients were also present in same ward as patient i within the last 30 days
   hosp_j = admissions %>%
     filter(ward_code == hosp_i$ward_code[1]) %>%
     mutate(valid = int_overlaps(interval(start_datetime, end_datetime), interval((profile_changes$second_date[i]-30), profile_changes$second_date[i]))) %>%
@@ -122,6 +136,7 @@ for(i in 1:(nrow(profile_changes))){
   
   if(nrow(hosp_j) == 0) next
   
+  #were these patients positive for mssa or mrsa within 30 days before the change in patient i
   test_samples = staph_isolates_profiles %>%
     filter(project_id %in% unique(hosp_j$project_id)) %>%
     filter(date <= profile_changes$second_date[i] & date > (profile_changes$second_date[i]-30)) %>%
@@ -136,14 +151,49 @@ for(i in 1:(nrow(profile_changes))){
   sample_i = profile_changes$change[i]
   
   profile_changes$possible_nos[i] = profile_changes$possible_nos[i] + sum(test_samples == sample_i)
+  profile_changes$possible_nos_ward[i] = hosp_i$ward_code[1]
   
 }
 
+#how many patients with both mrsa and mssa isolates ever detected?
+length(unique(profile_changes$project_id))
+
+#how many patients had mrsa and mssa isolates detected on the same day?
+profile_changes %>%
+  filter(same_date == T) %>%
+  select(project_id) %>% pull %>% unique %>% length
+
+#proportion of all patients which had mrsa-mssa diversity
+right_join(profile_changes %>%
+             filter(same_date == T) %>%
+             mutate(date = floor_date(first_date, "month")) %>%
+             select(project_id, date) %>%
+             distinct() %>%
+             count(date),
+           staph_isolates %>%
+             mutate(date = floor_date(date, "month")) %>%
+             select(project_id, date) %>%
+             distinct() %>%
+             count(date), by = "date") %>%
+  mutate(prop = n.x/n.y*100)  %>%
+  ggplot() +
+  geom_line(aes(date, prop)) +
+  theme_bw() +
+  labs(x = "Time (months)", y = "Percentage of patients with MRSA-MSSA diversity (%)") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
+
+ggsave(here::here("Figures", "fig5a.png"))
+
+
+profile_changes %>%
+  filter(same_date == F & change == "Methicillin-Resistant Staphylococcus aureus") %>%
+  select(possible_nos_ward) %>% pull %>% table() %>% sort()
 
 profile_changes_accurate = profile_changes %>%
-  filter(same_hosp == T & same_sample == F & change == "Methicillin-Resistant Staphylococcus aureus")
+  filter(same_hosp == T & same_date == F & change == "Methicillin-Resistant Staphylococcus aureus")
 
-table(profile_changes$same_sample)
+table(profile_changes$same_date)
 
 ##SUMMARY STATS
 profile_changes_accurate %>%
