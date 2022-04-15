@@ -28,7 +28,7 @@ p1 = ggplot(staph_isolates) +
               aes(n_test, n_res), method = "lm", colour = "blue") +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   theme_bw() +
-  labs(x = "Number of tested resistances", y = "Number of reported resistances",
+  labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances detected",
        colour = "") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -46,6 +46,17 @@ summary(lm(data = staph_isolates %>%
 
 #how many isolates with no reported resistance?
 sum(staph_isolates$n_test == 0)
+(staph_isolates %>%
+  select(project_id) %>%
+  pull %>%
+  unique %>%
+  length) - 
+(staph_isolates %>%
+  filter(n_test != 0) %>%
+  select(project_id) %>%
+  pull %>%
+  unique %>%
+  length)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
 
@@ -54,27 +65,7 @@ sum(staph_isolates$n_test == staph_isolates$n_res)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"])
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"])
 
-
 p2 = staph_isolates %>%
-  mutate(date = floor_date(date, "year")) %>%
-  group_by(date, SpeciesName) %>%
-  mutate(q25_res = quantile(n_res, 0.25)) %>%
-  mutate(q75_res = quantile(n_res, 0.75)) %>%
-  mutate(median_res = median(n_res)) %>%
-  group_by(date, SpeciesName) %>%
-  summarise(q25_res = mean(q25_res),
-            q75_res = mean(q75_res),
-            median_res = mean(median_res)) %>%
-  ggplot() +
-  geom_point(aes(date, median_res, colour = SpeciesName)) +
-  geom_errorbar(aes(x = date, ymin = q25_res, ymax = q75_res, colour = SpeciesName),
-                alpha = 0.7) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12)) +
-  labs(x = "Time (years)", y = "Number of reported resistances")
-
-p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
   group_by(date, SpeciesName) %>%
   mutate(q25_test = quantile(n_test, 0.25)) %>%
@@ -92,7 +83,27 @@ p3 = staph_isolates %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         legend.position = "bottom") +
-  labs(x = "Time (years)", y = "Number of tested resistances", colour = "")
+  labs(x = "Time (years)", y = "Number of susceptibility tests conducted", colour = "")
+
+p3 = staph_isolates %>%
+  mutate(date = floor_date(date, "year")) %>%
+  group_by(date, SpeciesName) %>%
+  mutate(q25_res = quantile(n_res, 0.25)) %>%
+  mutate(q75_res = quantile(n_res, 0.75)) %>%
+  mutate(median_res = median(n_res)) %>%
+  group_by(date, SpeciesName) %>%
+  summarise(q25_res = mean(q25_res),
+            q75_res = mean(q75_res),
+            median_res = mean(median_res)) %>%
+  ggplot() +
+  geom_point(aes(date, median_res, colour = SpeciesName)) +
+  geom_errorbar(aes(x = date, ymin = q25_res, ymax = q75_res, colour = SpeciesName),
+                alpha = 0.7) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12)) +
+  labs(x = "Time (years)", y = "Number of antibiotic resistances detected")
+
 
 pall = plot_grid(p1 + theme(legend.position = "none"),
                  NULL,
@@ -104,11 +115,11 @@ pall = plot_grid(p1 + theme(legend.position = "none"),
                            rel_widths = c(1,0.05,1),
                            label_size = 12,
                            hjust = 0),
-                 get_legend(p3),
-                 rel_heights = c(1.2,0.05,1,0.1),
+                 get_legend(p2),
+                 rel_heights = c(1.1,0.05,1.1,0.1),
                  labels = c("a)"),
                  nrow = 4,
                  label_size = 12,
                  hjust = 0)
 
-ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 8)
+ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 8, dpi = 300)
