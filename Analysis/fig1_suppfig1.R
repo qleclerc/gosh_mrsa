@@ -25,7 +25,7 @@ p1 = staph_isolates %>%
   ggplot() +
   geom_line(aes(date, n, colour = SpeciesName)) +
   theme_bw() +
-  labs(y = "Number of isolates", x = "Time (years)", colour = "") +
+  labs(y = "Number of isolates", x = "Time (months)", colour = "") +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         legend.text = element_text(size=12),
@@ -46,7 +46,7 @@ p2 = staph_isolates %>%
   ggplot() +
   geom_line(aes(date, prop, colour = SpeciesName)) +
   theme_bw() +
-  labs(y = "Proportion of S. aureus isolates", x = "Time (years)", colour = "") +
+  labs(y = "Proportion of S. aureus isolates", x = "Time (months)", colour = "") +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         legend.text = element_text(size=12),
@@ -75,7 +75,7 @@ staph_isolates %>%
                outlier.shape = NA) +
   theme_bw() +
   scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
-  labs(x = "Time", y = "Number of isolates per patient", colour = "") +
+  labs(x = "Time (months)", y = "Number of isolates per patient", colour = "") +
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),

@@ -41,7 +41,7 @@ staph_isolates %>%
 # #mrsa
 mrsa_resistances = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
-  select(5:59) %>%
+  select(5:56) %>%
   melt(.,id.vars = "date") %>%
   filter(!is.na(value)) %>%
   filter(value %in% c("S", "R")) %>%
@@ -82,7 +82,7 @@ mrsa_resistances = staph_isolates %>%
 # #mssa
 mssa_resistances = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
-  select(5:59) %>%
+  select(5:56) %>%
   melt(.,id.vars = "date") %>%
   filter(!is.na(value)) %>%
   filter(value %in% c("S", "R")) %>%
@@ -129,7 +129,7 @@ pa = staph_resistances %>%
   facet_wrap(~variable, ncol = 1) +
   theme_bw() +
   scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of isolates resistant to antibiotic", colour = "") +
+  labs(x = "Time (months)", y = "Proportion of isolates resistant to antibiotic", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -144,7 +144,7 @@ pb = staph_resistances %>%
   facet_wrap(~variable, nrow = 1) +
   theme_bw() +
   scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of isolates resistant to antibiotic") +
+  labs(x = "Time (months)", y = "Proportion of isolates resistant to antibiotic") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -159,7 +159,7 @@ pc = staph_resistances %>%
   facet_wrap(~variable, nrow = 1) +
   theme_bw() +
   scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of isolates resistant to antibiotic") +
+  labs(x = "Time (months)", y = "Proportion of isolates resistant to antibiotic") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -174,7 +174,7 @@ pd = staph_resistances %>%
   facet_wrap(~variable, nrow = 1) +
   theme_bw() +
   scale_y_continuous(limits = c(0,1)) +
-  labs(x = "Time (years)", y = "Proportion of isolates resistant to antibiotic") +
+  labs(x = "Time (months)", y = "Proportion of isolates resistant to antibiotic") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -215,7 +215,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig2.png"), width = 1100, height = 701)
+png(here::here("Figures", "suppfig2.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()
@@ -241,7 +241,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig3.png"), width = 1100, height = 701)
+png(here::here("Figures", "suppfig3.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()

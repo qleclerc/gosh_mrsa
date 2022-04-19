@@ -13,9 +13,9 @@ staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
 #number of resistances per isolate
 staph_isolates$n_res = apply(staph_isolates[,-c(1:5)], 1, function(x) sum(x == "R", na.rm = T))
 #number of resistance tested for per isolate
-staph_isolates$n_test = apply(staph_isolates[,-c(1:5, 60)], 1, function(x) sum(!is.na(x)))
+staph_isolates$n_test = apply(staph_isolates[,-c(1:5, 57)], 1, function(x) sum(!is.na(x)))
 
-staph_isolates = staph_isolates[,c(1:5, 60, 61)]
+staph_isolates = staph_isolates[,c(1:5, 57, 58)]
 
 #link between number of tests and resistances
 p1 = ggplot(staph_isolates) +
@@ -60,6 +60,8 @@ sum(staph_isolates$n_test == 0)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
 
+staph_isolates %>% filter(n_test == 0) %>% select(SpecimenType) %>% pull %>% table %>% sort
+
 #how many isolates with n reported resistance == n tested resistance
 sum(staph_isolates$n_test == staph_isolates$n_res)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"])
@@ -83,7 +85,7 @@ p2 = staph_isolates %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         legend.position = "bottom") +
-  labs(x = "Time (years)", y = "Number of susceptibility tests conducted", colour = "")
+  labs(x = "Time (months)", y = "Number of susceptibility tests conducted", colour = "")
 
 p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
@@ -102,7 +104,7 @@ p3 = staph_isolates %>%
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12)) +
-  labs(x = "Time (years)", y = "Number of antibiotic resistances detected")
+  labs(x = "Time (months)", y = "Number of antibiotic resistances detected")
 
 
 pall = plot_grid(p1 + theme(legend.position = "none"),

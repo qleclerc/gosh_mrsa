@@ -24,8 +24,7 @@ mrsa_isolates_m = staph_isolates %>%
   summarise(n = n()) %>%
   filter(variable %in% c("Chloramphenicol", "Mupirocin", "Tetracycline",
                          "Teicoplanin", "Vancomycin", "Syncercid", "Septrin",
-                         "Linezolid", "Clindamycin", "Fosfomycin", "Cefoxitin",
-                         "Co.Trimoxazole..Septrin."))
+                         "Linezolid", "Clindamycin", "Fosfomycin", "Cefoxitin"))
 
 mssa_isolates_m = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
@@ -37,8 +36,7 @@ mssa_isolates_m = staph_isolates %>%
   summarise(n = n()) %>%
   filter(variable %in% c("Chloramphenicol", "Mupirocin", "Tetracycline",
                          "Teicoplanin", "Vancomycin", "Syncercid", "Septrin",
-                         "Linezolid", "Clindamycin", "Fosfomycin", "Cefoxitin",
-                         "Co.Trimoxazole..Septrin."))
+                         "Linezolid", "Clindamycin", "Fosfomycin", "Cefoxitin"))
 
 mrsa_per_day = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
@@ -70,11 +68,12 @@ p1 = ggplot(all_isolates %>%
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size = 12)) +
-  labs(x = "Time", y = "Proportion of isolates tested for resistance", colour = "") +
+  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
-p2 = ggplot(all_isolates %>%
-              filter(variable %in% c("Septrin", "Fosfomycin"))) +
+p2 = ggplot(all_isolates %>% 
+              filter(variable %in% c("Mupirocin", "Chloramphenicol", "Tetracycline")) %>%
+              mutate(variable = factor(variable, levels = c("Mupirocin", "Chloramphenicol", "Tetracycline")))) +
   geom_line(aes(date, n/total, colour = species)) +
   scale_y_continuous(limits = c(0,1)) +
   facet_wrap(~variable, ncol = 1) +
@@ -83,34 +82,33 @@ p2 = ggplot(all_isolates %>%
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size = 12)) +
-  labs(x = "Time", y = "Proportion of isolates tested for resistance") +
+  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
-p3 = ggplot(all_isolates %>% 
-              filter(variable %in% c("Mupirocin", "Chloramphenicol", "Tetracycline")) %>%
-              mutate(variable = factor(variable, levels = c("Mupirocin", "Chloramphenicol", "Tetracycline")))) +
+p3 = ggplot(all_isolates %>%
+              filter(variable %in% c("Septrin", "Fosfomycin"))) +
   geom_line(aes(date, n/total, colour = species)) +
   scale_y_continuous(limits = c(0,1)) +
-  facet_wrap(~variable) +
+  facet_wrap(~variable, nrow = 1) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size = 12)) +
-  labs(x = "Time", y = "Proportion of isolates tested for resistance") +
+  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
 p4 = ggplot(all_isolates %>% 
-              filter(variable %in% c("Clindamycin", "Cefoxitin", "Co.Trimoxazole..Septrin."))) +
+              filter(variable %in% c("Clindamycin", "Cefoxitin"))) +
   geom_line(aes(date, n/total, colour = species)) +
   scale_y_continuous(limits = c(0,1)) +
-  facet_wrap(~variable) +
+  facet_wrap(~variable, nrow = 1) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size = 12)) +
-  labs(x = "Time", y = "Proportion of isolates tested for resistance") +
+  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
 
