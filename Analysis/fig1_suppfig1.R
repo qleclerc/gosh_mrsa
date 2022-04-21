@@ -20,17 +20,18 @@ p1 = staph_isolates %>%
   # group_by(project_id, date, SpeciesName) %>%
   # summarise(n = 1) %>%
   # ungroup() %>%
-  group_by(date, SpeciesName) %>%
+  group_by(date) %>%
   summarise(n = n()) %>%
   ggplot() +
-  geom_line(aes(date, n, colour = SpeciesName)) +
+  geom_line(aes(date, n)) +
   theme_bw() +
-  labs(y = "Number of isolates", x = "Time (months)", colour = "") +
+  labs(y = "Number of S. aureus isolates", x = "Time (months)") +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         legend.text = element_text(size=12),
         legend.title = element_text(size=12)) +
-  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
+               date_breaks = "2 years", date_labels = "%Y")
 
 
 
@@ -46,40 +47,42 @@ p2 = staph_isolates %>%
   ggplot() +
   geom_line(aes(date, prop, colour = SpeciesName)) +
   theme_bw() +
-  labs(y = "Proportion of S. aureus isolates", x = "Time (months)", colour = "") +
+  labs(y = "Proportion of MSSA and MRSA isolates", x = "Time (months)", colour = "") +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         legend.text = element_text(size=12),
         legend.title = element_text(size=12)) +
-  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
+               date_breaks = "2 years", date_labels = "%Y")
 
 
 plot_grid(plot_grid(p1 + theme(legend.position = "none"),
                     NULL,
                     p2 + theme(legend.position = "none"),
-                    ncol = 3, labels = c("a)", "", "b)"), label_size = 12,
-                    rel_widths = c(1, 0.05, 1)),
-          get_legend(p1 + theme(legend.position = "bottom")),
+                    nrow = 3, labels = c("a)", "", "b)"), label_size = 12,
+                    rel_heights = c(1, 0.05, 1)),
+          get_legend(p2 + theme(legend.position = "bottom")),
           nrow = 2, rel_heights = c(1,0.1))
 
-ggsave(here::here("Figures", "fig1.png"))
+ggsave(here::here("Figures", "fig1.png"), heigh = 9, width = 12)
 
 
-#number of isolates per patient
+#number of isolates per positive patient
 staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
   group_by(date, SpeciesName, project_id) %>%
   summarise(n = n()) %>%
   ggplot() +
-  geom_boxplot(aes(date, n, group=interaction(date, SpeciesName), colour = SpeciesName),
+  geom_boxplot(aes(date, n, group = interaction(date, SpeciesName), colour = SpeciesName),
                outlier.shape = NA) +
   theme_bw() +
   scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
-  labs(x = "Time (months)", y = "Number of isolates per patient", colour = "") +
+  labs(x = "Time (years)", y = "Number of isolates per positive patient per year", colour = "") +
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
-        legend.text = element_text(size = 12))
+        legend.text = element_text(size = 12)) +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
 
 ggsave(here::here("Figures", "suppfig1.png"))
 

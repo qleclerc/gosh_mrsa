@@ -49,7 +49,8 @@ for(i in 1:nrow(staph_isolates)){
 
 staph_isolates = staph_isolates %>%
   select(colnames(staph_isolates)[apply(staph_isolates, 2, function(x) !(all(is.na(x))))]) %>%
-  select(-(Co.Trimoxazole..Septrin.))
+  select(-(Co.Trimoxazole..Septrin.)) %>%
+  rename(Cotrimoxazole = Septrin)
   
 write.csv(staph_isolates, here::here("Clean", "staph_isolates.csv"), row.names = F)
 

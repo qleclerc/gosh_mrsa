@@ -47,16 +47,16 @@ summary(lm(data = staph_isolates %>%
 #how many isolates with no reported resistance?
 sum(staph_isolates$n_test == 0)
 (staph_isolates %>%
-  select(project_id) %>%
-  pull %>%
-  unique %>%
-  length) - 
-(staph_isolates %>%
-  filter(n_test != 0) %>%
-  select(project_id) %>%
-  pull %>%
-  unique %>%
-  length)
+    select(project_id) %>%
+    pull %>%
+    unique %>%
+    length) - 
+  (staph_isolates %>%
+     filter(n_test != 0) %>%
+     select(project_id) %>%
+     pull %>%
+     unique %>%
+     length)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
 
@@ -80,12 +80,14 @@ p2 = staph_isolates %>%
   ggplot() +
   geom_point(aes(date, median_test, colour = SpeciesName)) +
   geom_errorbar(aes(x = date, ymin = q25_test, ymax = q75_test, colour = SpeciesName),
-                alpha = 0.7) +
+                alpha = 0.5, size = 1) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
         legend.position = "bottom") +
-  labs(x = "Time (months)", y = "Number of susceptibility tests conducted", colour = "")
+  labs(x = "Time (years)", y = "Number of susceptibility tests\nconducted per isolate", colour = "") +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
 
 p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
@@ -100,11 +102,14 @@ p3 = staph_isolates %>%
   ggplot() +
   geom_point(aes(date, median_res, colour = SpeciesName)) +
   geom_errorbar(aes(x = date, ymin = q25_res, ymax = q75_res, colour = SpeciesName),
-                alpha = 0.7) +
+                alpha = 0.5, size = 1) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12)) +
-  labs(x = "Time (months)", y = "Number of antibiotic resistances detected")
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.position = "bottom") +
+  labs(x = "Time (years)", y = "Number of antibiotic resistances\ndetected per isolate") +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
 
 
 pall = plot_grid(p1 + theme(legend.position = "none"),
@@ -118,10 +123,10 @@ pall = plot_grid(p1 + theme(legend.position = "none"),
                            label_size = 12,
                            hjust = 0),
                  get_legend(p2),
-                 rel_heights = c(1.1,0.05,1.1,0.1),
+                 rel_heights = c(1.2,0.05,1.1,0.1),
                  labels = c("a)"),
                  nrow = 4,
                  label_size = 12,
                  hjust = 0)
 
-ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 8, dpi = 300)
+ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 12, dpi = 300)
