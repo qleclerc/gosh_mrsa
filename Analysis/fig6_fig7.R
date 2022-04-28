@@ -50,19 +50,6 @@ res_profiles_diversity %>%
   filter(same_date == T) %>%
   select(species) %>% pull %>% table
 
-#number of isolates identified per patient
-tt = res_profiles_diversity %>%
-  filter(same_date == T) %>%
-  group_by(species, first_date, first_lab_id, second_lab_id) %>%
-  summarise(n = n())
-table(tt$species, tt$n)/c(table(tt$species))*100
-table(tt$n) %>% prop.table*100
-#number of differences between two varying resistance profiles
-tt2 = isolates_diversity %>%
-  filter(n_profiles > 1)
-table(tt2$species, tt2$n_profiles)/c(table(tt2$species))*100
-table(tt2$n_profiles) %>% prop.table*100
-
 
 #fig5
 pa = right_join(mrsa_mssa_diversity %>%
@@ -80,10 +67,15 @@ pa = right_join(mrsa_mssa_diversity %>%
   ggplot() +
   geom_line(aes(date, prop)) +
   theme_bw() +
-  labs(x = "Time (years)", y = "Patients with MRSA-MSSA diversity (%)") +
+  labs(x = "Time (years)", y = "Patients with MRSA-MSSA\ndiversity (%)") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12)) +
-  scale_y_continuous(limits = c(0,4), breaks = seq(0,4,1))
+  scale_y_continuous(limits = c(0,4), breaks = seq(0,4,1)) +
+  scale_x_date(breaks = as.Date(c("2000-01-01", "2002-01-01", "2004-01-01",
+                                  "2006-01-01", "2008-01-01", "2010-01-01",
+                                  "2012-01-01", "2014-01-01", "2016-01-01",
+                                  "2018-01-01", "2020-01-01")), date_labels = "%Y",
+               limits = as.Date(c("2000-01-01", "2021-01-01")))
 
 pb = right_join(res_profiles_diversity %>%
                   filter(same_date == T) %>%
@@ -103,20 +95,71 @@ pb = right_join(res_profiles_diversity %>%
   ggplot() +
   geom_line(aes(date, prop, colour = species)) +
   theme_bw() +
-  labs(x = "Time (years)", y = "Patients with resistance profile diversity (%)",
+  labs(x = "Time (years)", y = "Patients with resistance profile\ndiversity (%)",
        colour = "") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         legend.text = element_text(size = 12),
         legend.position = "bottom") +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,12,2))
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,12,2)) +
+  scale_x_date(breaks = as.Date(c("2000-01-01", "2002-01-01", "2004-01-01",
+                                  "2006-01-01", "2008-01-01", "2010-01-01",
+                                  "2012-01-01", "2014-01-01", "2016-01-01",
+                                  "2018-01-01", "2020-01-01")), date_labels = "%Y",
+               limits = as.Date(c("2000-01-01", "2021-01-01")))
 
-plot_grid(pa, NULL, pb,
+#number of unique profiles identified when diversity is identified
+pc = isolates_diversity %>%
+  filter(n_profiles > 1) %>%
+  group_by(species, n_profiles) %>%
+  summarise(n = n()) %>%
+  mutate(n = n/sum(n)*100) %>%
+  ggplot() +
+  geom_col(aes(as.factor(n_profiles), n, fill = species)) +
+  facet_wrap(~species) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.position = "none") +
+  labs(x = "Number of unique resistance profiles identified within the same patient",
+       y = "Patients with diversity (%)") +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
+
+#number of differences identified between isolates with different profiles
+pd = res_profiles_diversity %>%
+  filter(same_date == T) %>%
+  group_by(project_id, species, first_date) %>%
+  summarise(n_diffs = length(unique(antibiotic))) %>%
+  group_by(species, n_diffs) %>%
+  summarise(n = n()) %>%
+  mutate(n = n/sum(n)*100) %>%
+  ggplot() +
+  geom_col(aes(as.factor(n_diffs), n, fill = species)) +
+  facet_wrap(~species) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.position = "none") +
+  labs(x = "Number of differing resistances between isolates within the same patient",
+       y = "Patients with diversity (%)") +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
+
+
+plot_grid(plot_grid(pa, NULL, pb,
+                    ncol = 1,
+                    rel_heights = c(0.8,0.01,1),
+                    labels = c("a)", "", "b)")),
+          NULL,
+          pc,
+          NULL,
+          pd,
           ncol = 1,
-          rel_heights = c(1,0.05,1),
-          labels = c("a)", "", "b)"))
+          rel_heights = c(1,0.01,0.4,0.01,0.4),
+          labels = c("", "", "c)", "", "d)"))
 
-ggsave(here::here("Figures", "fig6.png"), height = 11, width = 14)
+ggsave(here::here("Figures", "fig6.png"), height = 14, width = 11)
 
 
 

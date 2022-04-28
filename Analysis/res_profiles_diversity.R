@@ -207,6 +207,46 @@ for(i in 1:(nrow(profile_changes))){
 }
 
 
+#add column to check if there was antibiotic usage
+antibio_data = read.csv(here::here("Clean", "antibio_data.csv")) %>%
+  mutate(date = as_date(start_datetime))
+
+antibio_data$name[grep("penicillin", antibio_data$name)] = "Penicillin"
+antibio_data$name[antibio_data$name == "Fusidic_acid"] = "Fucidin"
+antibio_data$name[antibio_data$name == "Co-Trimoxazole"] = "Cotrimoxazole"
+
+profile_changes$antibiotic_use = FALSE
+
+for(i in 1:(nrow(profile_changes))){
+  
+  antibio_i = antibio_data %>%
+    filter(project_id == profile_changes$project_id[i])
+  
+  if(nrow(antibio_i) == 0) next
+  
+  antibio_name = profile_changes$antibiotic[i]
+  
+  if(antibio_name == "Gent.Cipro") antibio_name = "Gentamicin"
+  if(antibio_name == "Amik.Fluclox") antibio_name = "Amikacin"
+  if(antibio_name == "Piperacillin...Tazobactam") antibio_name = "Piperacillin"
+  if(antibio_name == "Pip.Taz.Cipro") antibio_name = "Piperacillin"
+  
+  antibio_i = antibio_i %>%
+    filter(name == antibio_name)
+  
+  if(nrow(antibio_i) == 0) next
+  
+  antibio_i = antibio_i %>%
+    mutate(valid = (profile_changes$second_date[i] %within% interval(date-30, date))) %>%
+    filter(valid == T)
+  
+  if(nrow(antibio_i) == 0) next
+  
+  profile_changes$antibiotic_use[i] = TRUE
+  
+}
+
+
 profile_changes = profile_changes %>%
   mutate(change = replace(change, change == -2, "R")) %>%
   mutate(change = replace(change, change == "2", "S"))
@@ -214,5 +254,9 @@ profile_changes = profile_changes %>%
 write.csv(profile_changes, here::here("Clean", "res_profiles_diversity.csv"), row.names = F)
 
 
-
+profile_changes %>%
+  filter(same_hosp == T) %>%
+  filter(same_date == F) %>%
+  filter(antibiotic_use == T) %>%
+  filter(change == "R")
 
