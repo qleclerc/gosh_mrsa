@@ -1,12 +1,11 @@
 
-library(dplyr)
 library(lubridate)
+library(dplyr)
+library(tidyr)
 library(reshape2)
 library(ggplot2)
 library(scales)
 library(cowplot)
-library(Hmisc)
-library(corrplot)
 
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
@@ -92,7 +91,9 @@ mssa_resistances = staph_isolates %>%
 #   theme_bw() +
 #   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
-staph_resistances = rbind(mrsa_resistances, mssa_resistances)
+staph_resistances = rbind(mrsa_resistances, mssa_resistances) %>%
+  tibble() %>%
+  complete(date, variable, value, SpeciesName)
 
 pa = staph_resistances %>%
   filter(value == "R") %>%
@@ -141,7 +142,7 @@ pc = staph_resistances %>%
 
 pd = staph_resistances %>%
   filter(value == "R") %>%
-  filter(variable %in% c("Cotrimoxazole", "Fosfomycin")) %>%
+  filter(variable %in% c("Fosfomycin", "Cotrimoxazole")) %>%
   ggplot() +
   geom_line(aes(date, prop, colour = SpeciesName)) +
   facet_wrap(~variable, nrow = 1) +
@@ -164,10 +165,13 @@ plot_grid(plot_grid(pa + theme(legend.position = "none"),
           get_legend(pa + theme(legend.position = "bottom")),
           nrow = 2, rel_heights = c(1,0.1))
 
-ggsave(here::here("Figures", "fig5.png"), height = 10, width = 14)
+ggsave(here::here("Figures", "fig4.png"), height = 10, width = 14)
 
 #supp correlations
 #remove resistances with less than 50 resistant isolates over all time period
+library(Hmisc)
+library(corrplot)
+
 abx_dat = mrsa_resistances %>%
   filter(value == "R") %>%
   group_by(variable) %>%
@@ -188,7 +192,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig2.png"), width = 1100, height = 700)
+png(here::here("Figures", "suppfig1.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()
@@ -214,7 +218,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig3.png"), width = 1100, height = 700)
+png(here::here("Figures", "suppfig2.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()

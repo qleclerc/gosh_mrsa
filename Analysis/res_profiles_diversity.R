@@ -117,6 +117,38 @@ profile_changes = profile_changes[-1,]
 
 #this new dataset should contain all the resistance changes between isolates
 
+equivalence_table = read.csv(here::here("Clean", "equivalence_table.csv"))[,-1]
+colnames(equivalence_table)[1] = "antibiotic"
+equivalence_table$antibiotic[equivalence_table$antibiotic == "Fusidic_acid"] = "Fucidin"
+equivalence_table$antibiotic[equivalence_table$antibiotic == "Co-Trimoxazole"] = "Cotrimoxazole"
+
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Gent.Cipro", "class" = "Aminoglycoside"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Amik.Fluclox", "class" = "Aminoglycoside"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Piperacillin...Tazobactam", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Pip.Taz.Cipro", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Penicillin", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Neomycin", "class" = "Aminoglycoside"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Cephradine", "class" = "Cephalosporin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Syncercid", "class" = "Streptogramin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Augmentin", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Naladixic.Acid", "class" = "Fluoroquinolone"))
+
+#add class of change
+profile_changes = profile_changes %>%
+  left_join(equivalence_table, "antibiotic") %>%
+  filter(!is.na(project_id)) %>% 
+  distinct()
+
 #need to look whether events are during a single hospitalisation event, or if patients were discharged in the meantime
 #if discharged in the meantime, reinfection by someone else would be an explanation
 admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
@@ -211,10 +243,6 @@ for(i in 1:(nrow(profile_changes))){
 antibio_data = read.csv(here::here("Clean", "antibio_data.csv")) %>%
   mutate(date = as_date(start_datetime))
 
-antibio_data$name[grep("penicillin", antibio_data$name)] = "Penicillin"
-antibio_data$name[antibio_data$name == "Fusidic_acid"] = "Fucidin"
-antibio_data$name[antibio_data$name == "Co-Trimoxazole"] = "Cotrimoxazole"
-
 profile_changes$antibiotic_use = FALSE
 
 for(i in 1:(nrow(profile_changes))){
@@ -224,15 +252,10 @@ for(i in 1:(nrow(profile_changes))){
   
   if(nrow(antibio_i) == 0) next
   
-  antibio_name = profile_changes$antibiotic[i]
-  
-  if(antibio_name == "Gent.Cipro") antibio_name = "Gentamicin"
-  if(antibio_name == "Amik.Fluclox") antibio_name = "Amikacin"
-  if(antibio_name == "Piperacillin...Tazobactam") antibio_name = "Piperacillin"
-  if(antibio_name == "Pip.Taz.Cipro") antibio_name = "Piperacillin"
+  antibio_name = profile_changes$class[i]
   
   antibio_i = antibio_i %>%
-    filter(name == antibio_name)
+    filter(class == antibio_name)
   
   if(nrow(antibio_i) == 0) next
   
@@ -252,11 +275,39 @@ profile_changes = profile_changes %>%
   mutate(change = replace(change, change == "2", "S"))
 
 write.csv(profile_changes, here::here("Clean", "res_profiles_diversity.csv"), row.names = F)
+profile_changes = read.csv(here::here("Clean", "res_profiles_diversity.csv")) %>%
+  mutate(first_date = as_date(first_date)) %>%
+  mutate(second_date = as_date(second_date))
 
+
+profile_changes = read.csv(here::here("Clean", "res_profiles_diversity.csv")) %>%
+  mutate(first_date = as_date(first_date)) %>%
+  mutate(second_date = as_date(second_date))
 
 profile_changes %>%
-  filter(same_hosp == T) %>%
   filter(same_date == F) %>%
+  filter(same_hosp == T) %>%
   filter(antibiotic_use == T) %>%
   filter(change == "R")
 
+profile_changes %>%
+  filter(same_date == T) %>%
+  select(antibiotic) %>%
+  pull %>%
+  table %>%
+  sort
+
+profile_changes %>%
+  filter(same_date == F) %>%
+  select(antibiotic) %>%
+  pull %>%
+  table %>%
+  sort
+
+profile_changes %>%
+  filter(same_date == F) %>%
+  filter(antibiotic_use == T) %>%
+  select(antibiotic) %>%
+  pull %>%
+  table %>%
+  sort

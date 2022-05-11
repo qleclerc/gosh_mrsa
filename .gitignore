@@ -40,3 +40,4 @@ vignettes/*.pdf
 
 # Data
 /Data
+/Clean/antibio_data.csv

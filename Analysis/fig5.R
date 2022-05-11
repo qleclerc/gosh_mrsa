@@ -1,11 +1,10 @@
 
 library(dplyr)
+library(tidyr)
 library(lubridate)
 library(reshape2)
 library(ggplot2)
 library(scales)
-library(Hmisc)
-library(corrplot)
 library(cowplot)
 
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv"), stringsAsFactors = F) %>%
@@ -56,37 +55,13 @@ mssa_per_day = staph_isolates %>%
 mssa_isolates_m = left_join(mssa_isolates_m, mssa_per_day, by = "date")
 mssa_isolates_m$species = "Methicillin-Susceptible Staphylococcus aureus"
 
-all_isolates = rbind(mrsa_isolates_m, mssa_isolates_m)
+all_isolates = rbind(mrsa_isolates_m, mssa_isolates_m) %>%
+  tibble() %>%
+  complete(date, variable, species)
 
 p1 = ggplot(all_isolates %>% 
-              filter(variable %in% c("Teicoplanin", "Vancomycin", "Syncercid", "Linezolid"))) +
-  geom_line(aes(date, n/total, colour = species)) +
-  scale_y_continuous(limits = c(0,1)) +
-  facet_wrap(~variable, ncol = 1) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12)) +
-  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance", colour = "") +
-  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
-
-p2 = ggplot(all_isolates %>% 
-              filter(variable %in% c("Mupirocin", "Chloramphenicol", "Tetracycline")) %>%
-              mutate(variable = factor(variable, levels = c("Mupirocin", "Chloramphenicol", "Tetracycline")))) +
-  geom_line(aes(date, n/total, colour = species)) +
-  scale_y_continuous(limits = c(0,1)) +
-  facet_wrap(~variable, ncol = 1) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12)) +
-  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance") +
-  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
-
-p3 = ggplot(all_isolates %>%
-              filter(variable %in% c("Cotrimoxazole", "Fosfomycin"))) +
+              filter(variable %in% c("Fosfomycin", "Cotrimoxazole")) %>%
+              mutate(variable = factor(variable, levels = c("Cotrimoxazole", "Fosfomycin")))) +
   geom_line(aes(date, n/total, colour = species)) +
   scale_y_continuous(limits = c(0,1)) +
   facet_wrap(~variable, nrow = 1) +
@@ -95,10 +70,10 @@ p3 = ggplot(all_isolates %>%
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size = 12)) +
-  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance") +
+  labs(x = "Time (months)", y = "Proportion of isolates tested", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
-p4 = ggplot(all_isolates %>% 
+p2 = ggplot(all_isolates %>% 
               filter(variable %in% c("Clindamycin", "Cefoxitin"))) +
   geom_line(aes(date, n/total, colour = species)) +
   scale_y_continuous(limits = c(0,1)) +
@@ -108,26 +83,67 @@ p4 = ggplot(all_isolates %>%
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.text = element_text(size = 12)) +
-  labs(x = "Time (months)", y = "Proportion of isolates tested for resistance") +
+  labs(x = "Time (months)", y = "Proportion of isolates tested") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
+p3 = ggplot(all_isolates %>%
+              filter(variable %in% c("Mupirocin"))) +
+  geom_line(aes(date, n/total, colour = species)) +
+  scale_y_continuous(limits = c(0,1)) +
+  facet_wrap(~variable, nrow = 1) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size = 12)) +
+  labs(x = "Time (months)", y = "Proportion of isolates tested") +
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
-plot_grid(plot_grid(plot_grid(p1 + theme(legend.position = "none"),
+p4 = ggplot(all_isolates %>% 
+              filter(variable %in% c("Chloramphenicol", "Tetracycline"))) +
+  geom_line(aes(date, n/total, colour = species)) +
+  scale_y_continuous(limits = c(0,1)) +
+  facet_wrap(~variable, ncol = 1) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size = 12)) +
+  labs(x = "Time (months)", y = "Proportion of isolates tested") +
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
+
+p5 = ggplot(all_isolates %>% 
+              filter(variable %in% c("Linezolid", "Syncercid", "Teicoplanin", "Vancomycin"))) +
+  geom_line(aes(date, n/total, colour = species)) +
+  scale_y_continuous(limits = c(0,1)) +
+  facet_wrap(~variable, ncol = 1) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size = 12)) +
+  labs(x = "Time (months)", y = "Proportion of isolates tested") +
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
+
+plot_grid(plot_grid(plot_grid(plot_grid(p1 + theme(legend.position = "none"),
+                                        NULL,
+                                        p2 + theme(legend.position = "none"),
+                                        nrow = 3, rel_heights = c(1,0.05,1),
+                                        labels = c("a)", "", "b)"), hjust = 0, label_size = 12),
                               NULL,
-                              p2 + theme(legend.position = "none"),
-                              ncol = 3, rel_widths = c(1,0.05,1),
-                              labels = c("a)", "", "b)"), hjust = 0, label_size = 12),
+                              plot_grid(p3 + theme(legend.position = "none"),
+                                        NULL,
+                                        p4 + theme(legend.position = "none"),
+                                        ncol = 1, rel_heights = c(0.5, 0.05, 1),
+                                        labels = c("c)", "", "d)"), hjust = 0, label_size = 12),
+                              ncol = 3, rel_widths = c(1,0.05,0.7)),
                     NULL,
-                    plot_grid(p3 + theme(legend.position = "none"),
-                              NULL,
-                              p4 + theme(legend.position = "none"),
-                              ncol = 1, rel_heights = c(1, 0.05, 1),
-                              labels = c("c)", "", "d)"), hjust = 0, label_size = 12),
-                    ncol = 3, rel_widths = c(1,0.05,1.2)),
+                    p5 + theme(legend.position = "none"),
+                    rel_widths = c(1,0.05,0.4), nrow = 1, labels = c("", "", "e)")),
           get_legend(p1+theme(legend.position = "bottom")),
           ncol = 1, rel_heights = c(1,0.05))
 
-ggsave(here::here("Figures","fig4.png"), height = 10, width = 14)
+ggsave(here::here("Figures","fig5.png"), height = 10, width = 14)
 
 # #cor
 # cor_res = staph_isolates_m %>%

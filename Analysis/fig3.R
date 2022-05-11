@@ -8,6 +8,7 @@ library(cowplot)
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
+all_data = data.frame()
 
 #top resistances for MSSA and MRSA
 d1 = staph_isolates %>%
@@ -15,93 +16,88 @@ d1 = staph_isolates %>%
   select(-c(1:5)) %>%
   apply(., 2, function(x) round(sum(!is.na(x))/51020*100, 2)) %>%
   sort(decreasing = T) %>%
-  .[1:10]
+  .[1:15]
 
-p1 = data.frame(abx = factor(names(d1), levels = names(d1)),
-                val = d1) %>%
-  ggplot() +
-  geom_col(aes(abx, val), fill = "#00BFC4") +
-  theme_bw() +
-  theme(axis.text.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12, angle = 45, hjust = 1,
-                                   face = c("bold", "plain", "plain", "plain",
-                                            "bold", "bold", "plain", "plain",
-                                            "plain", "plain")),
-        axis.title = element_text(size = 12)) +
-  labs(x = "", y = "Percentage of MSSA\nisolates tested") +
-  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MSSA",
+                            var = "test"))
 
 d1 = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
   select(-c(1:5)) %>%
   apply(., 2, function(x) round(sum(x == "R", na.rm = T)/51020*100, 2)) %>%
-  sort(decreasing = T) %>%
-  .[1:10]
+  .[all_data %>% filter(spec == "MSSA" & var == "test") %>% select(abx) %>% pull]
 
-p2 = data.frame(abx = factor(names(d1), levels = names(d1)),
-                val = d1) %>%
-  ggplot() +
-  geom_col(aes(abx, val), fill = "#00BFC4") +
-  theme_bw() +
-  theme(axis.text.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12, angle = 45, hjust = 1,
-                                   face = c("plain", "plain", "plain", "plain",
-                                            "plain", "bold", "plain", "bold",
-                                            "plain", "bold")),
-        axis.title = element_text(size = 12)) +
-  labs(x = "", y = "Percentage of MSSA\nisolates resistant") +
-  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MSSA",
+                            var = "res"))
 
 d1 = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
   select(-c(1:5)) %>%
   apply(., 2, function(x) round(sum(!is.na(x))/21187*100, 2)) %>%
   sort(decreasing = T) %>%
-  .[1:10]
+  .[1:15]
 
-p3 = data.frame(abx = factor(names(d1), levels = names(d1)),
-                val = d1) %>%
-  ggplot() +
-  geom_col(aes(abx, val), fill = "#F8766D") +
-  theme_bw() +
-  theme(axis.text.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12, angle = 45, hjust = 1,
-                                   face = c("plain", "plain", "plain", "plain",
-                                            "bold", "plain", "plain", "plain",
-                                            "plain", "bold")),
-        axis.title = element_text(size = 12)) +
-  labs(x = "", y = "Percentage of MRSA\nisolates tested") +
-  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MRSA",
+                            var = "test"))
 
 d1 = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
   select(-c(1:5)) %>%
   apply(., 2, function(x) round(sum(x == "R", na.rm = T)/21187*100, 2)) %>%
-  sort(decreasing = T) %>%
-  .[1:10]
+  .[all_data %>% filter(spec == "MRSA" & var == "test") %>% select(abx) %>% pull]
 
-p4 = data.frame(abx = factor(names(d1), levels = names(d1)),
-                val = d1) %>%
-  ggplot() +
-  geom_col(aes(abx, val), fill = "#F8766D") +
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MRSA",
+                            var = "res"))
+
+
+"#00BFC4"
+"#F8766D"
+
+p1 = ggplot() +
+  geom_col(data = all_data %>%
+             filter(spec == "MRSA" & var == "test") %>%
+             mutate(abx = factor(abx, levels = abx[rev(order(val))])),
+           aes(abx, val), fill = "#F8766D", alpha = 0.5) +
+  geom_col(data = all_data %>%
+             filter(spec == "MRSA" & var == "res"),
+           aes(abx, val), fill = "#F8766D") +
   theme_bw() +
   theme(axis.text.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12, angle = 45, hjust = 1,
-                                   face = c("plain", "plain", "plain", "plain",
-                                            "bold", "plain", "plain", "plain",
-                                            "bold", "plain")),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
         axis.title = element_text(size = 12)) +
-  labs(x = "", y = "Percentage of MRSA\nisolates resistant") +
+  labs(x = "", y = "Percentage of MRSA isolates\ntested and resistant") +
   scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
 
-plot_grid(p1, NULL, p2,
-          NULL, NULL, NULL, 
-          p3, NULL, p4,
-          rel_heights = c(1,0.05,1),
-          rel_widths = c(1,0.05,1),
-          ncol = 3,
-          labels = c("a)", "", "b)",
-                     "", "", "",
-                     "c)","", "d)"))
+p2 = ggplot() +
+  geom_col(data = all_data %>%
+             filter(spec == "MSSA" & var == "test") %>%
+             mutate(abx = factor(abx, levels = abx[rev(order(val))])),
+           aes(abx, val), fill = "#00BFC4", alpha = 0.5) +
+  geom_col(data = all_data %>%
+             filter(spec == "MSSA" & var == "res"),
+           aes(abx, val), fill = "#00BFC4") +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12)) +
+  labs(x = "", y = "Percentage of MSSA isolates\ntested and resistant") +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,20))
+
+plot_grid(p1, p2,
+          rel_heights = c(1,1),
+          ncol = 1,
+          labels = c("a)","b)"))
 
 ggsave(here::here("Figures", "fig3.png"), height = 8, width = 10)

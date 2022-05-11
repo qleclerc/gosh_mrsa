@@ -61,6 +61,10 @@ sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant S
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
 
 staph_isolates %>% filter(n_test == 0) %>% select(SpecimenType) %>% pull %>% table %>% sort
+(7280+267+237+13+5)/nrow(staph_isolates %>% filter(n_test == 0))
+
+staph_isolates %>% select(SpecimenType) %>% pull %>% table %>% sort
+(20567+18339+1034+595+314+16+6+4)/nrow(staph_isolates)
 
 #how many isolates with n reported resistance == n tested resistance
 sum(staph_isolates$n_test == staph_isolates$n_res)

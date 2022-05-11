@@ -51,7 +51,7 @@ res_profiles_diversity %>%
   select(species) %>% pull %>% table
 
 
-#fig5
+#fig6
 pa = right_join(mrsa_mssa_diversity %>%
                   filter(same_date == T) %>%
                   mutate(date = floor_date(second_date, "year")) %>%
