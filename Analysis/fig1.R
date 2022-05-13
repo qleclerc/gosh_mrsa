@@ -112,6 +112,17 @@ cat(staph_isolates %>%
 
 table(staph_isolates$SpeciesName)
 
+#lm
+lm_dat = staph_isolates %>%
+  mutate(date = floor_date(date, "year")) %>%
+  group_by(date, SpeciesName, project_id) %>%
+  summarise(n = n()) %>%
+  select(date, SpeciesName, n)
+
+lm_res = lm(n ~ date + SpeciesName, data = lm_dat)
+summary(lm_res)
+
+
 # 
 # #periods in msts: the period defines how often any trend should repeat.
 # #in our case, because our data is weekly, and we think the seasonality is annual, then

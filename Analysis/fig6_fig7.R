@@ -398,7 +398,7 @@ pf = ggplot(res_m %>%
         axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
         axis.title = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "", y = "Proportion of changes in MSSA") +
+  labs(x = "", y = "Proportion of changes in MRSA") +
   scale_fill_manual(values = c(mrsa_col, mrsa_col))
 
 pg = ggplot(res_m %>%

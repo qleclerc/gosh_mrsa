@@ -20,6 +20,10 @@ staph_isolates$n_test = apply(staph_isolates[,-c(1:5, 57)], 1, function(x) sum(!
 
 staph_isolates = staph_isolates[,c(1:5, 57, 58)]
 
+#significant correlation, but r^2 = 0.572 suggesting not all var in n res explained by n tests 
+summary(lm(data = staph_isolates,
+           n_res ~ n_test + SpeciesName))
+
 #link between number of tests and resistances
 p1 = ggplot(staph_isolates) +
   geom_jitter(aes(n_test, n_res, colour = SpeciesName), alpha = 0.3) +
@@ -40,13 +44,6 @@ p1 = ggplot(staph_isolates) +
   scale_x_continuous(breaks = seq(0,30,5)) +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
-#significant correlation, but r^2 = 0.14 and 0.34 suggesting not all var in n res explained by n tests 
-summary(lm(data = staph_isolates %>% 
-             filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus"),
-           n_res ~ n_test))
-summary(lm(data = staph_isolates %>% 
-             filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"),
-           n_res ~ n_test))
 
 #how many isolates with no reported resistance?
 sum(staph_isolates$n_test == 0)
@@ -64,11 +61,21 @@ sum(staph_isolates$n_test == 0)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
 sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
 
-staph_isolates %>% filter(n_test == 0) %>% select(SpecimenType) %>% pull %>% table %>% sort
-(7280+267+237+13+5)/nrow(staph_isolates %>% filter(n_test == 0))
+nosusnose = staph_isolates %>% filter(n_test == 0) %>% select(SpecimenType) %>% pull
+nosusnose = length((grep("ose|hroat|asal", nosusnose, value = T)))
+nosusnonose = 10029-nosusnose
+nosusnose/(nosusnonose+nosusnose)
 
-staph_isolates %>% select(SpecimenType) %>% pull %>% table %>% sort
-(20567+18339+1034+595+314+16+6+4)/nrow(staph_isolates)
+susnose = staph_isolates %>% filter(n_test > 0) %>% select(SpecimenType) %>% pull
+susnose = length((grep("ose|hroat|asal", susnose, value = T)))
+susnonose = 62178 - susnose
+susnose/(susnonose+susnose)
+
+#isolates with/without sus test data x isolates from nose,throat,skin/not
+chisq.test(matrix(c(susnose,nosusnose,
+                    susnonose,nosusnonose),
+                  byrow = T, nrow = 2))
+
 
 #how many isolates with n reported resistance == n tested resistance
 sum(staph_isolates$n_test == staph_isolates$n_res)
@@ -98,6 +105,18 @@ p2 = staph_isolates %>%
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
+#significant correlation, but r^2 = 0.572 suggesting not all var in n res explained by n tests 
+summary(lm(data = staph_isolates %>%
+             mutate(date = floor_date(date, "year")) %>%
+             filter(date < as.Date("2011-01-01")),
+           n_test ~ date + SpeciesName))
+
+summary(lm(data = staph_isolates %>%
+             mutate(date = floor_date(date, "year")) %>%
+             filter(date >= as.Date("2011-01-01")),
+           n_test ~ date + SpeciesName))
+
+
 p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
   group_by(date, SpeciesName) %>%
@@ -121,6 +140,10 @@ p3 = staph_isolates %>%
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
+summary(lm(data = staph_isolates %>%
+             mutate(date = floor_date(date, "year")) %>%
+             filter(date >= as.Date("2011-01-01")),
+           n_res ~ date + SpeciesName))
 
 pall = plot_grid(p1 + theme(legend.position = "none"),
                  NULL,
