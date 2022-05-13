@@ -99,7 +99,7 @@ pb = right_join(res_profiles_diversity %>%
         axis.title = element_text(size = 12),
         legend.text = element_text(size = 12),
         legend.position = "bottom") +
-  scale_y_continuous(limits = c(0,0.12), breaks = seq(0,0.12,0.02)) +
+  scale_y_continuous(limits = c(0,0.14), breaks = seq(0,0.14,0.02)) +
   scale_x_date(breaks = as.Date(c("2000-01-01", "2002-01-01", "2004-01-01",
                                   "2006-01-01", "2008-01-01", "2010-01-01",
                                   "2012-01-01", "2014-01-01", "2016-01-01",

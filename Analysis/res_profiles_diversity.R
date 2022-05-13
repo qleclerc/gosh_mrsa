@@ -34,57 +34,85 @@ staph_isolates_profiles = staph_isolates_profiles %>%
   filter(project_id %in% good_ids)
 
 
-interesting_samples = c()
+interesting_samples_mrsa = c()
+
+#IMPORTANT: filter MRSA/MSSA!! Otherwise can just compare an mrsa with an mssa and miss the next mrsa isolate
+
+staph_isolates_profiles_mrsa = staph_isolates_profiles %>%
+  filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus")
 
 #heavy lifting here
 #for each row, if the patient, species and source are the same, compare the resistance profiles
 #if there is any 2 in the comparison, that indicates a difference, and is recorded
-for(i in 1:(nrow(staph_isolates_profiles)-1)){
+for(i in 1:(nrow(staph_isolates_profiles_mrsa)-1)){
   
-  if(staph_isolates_profiles$project_id[i] != staph_isolates_profiles$project_id[i+1]) next
-  if(staph_isolates_profiles$SpeciesName[i] != staph_isolates_profiles$SpeciesName[i+1]) next
+  if(staph_isolates_profiles_mrsa$project_id[i] != staph_isolates_profiles_mrsa$project_id[i+1]) next
   # if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
   
   #extract the two profiles compared
-  tt = staph_isolates_profiles[c(i:(i+1)),-c(1:5)]
+  tt = staph_isolates_profiles_mrsa[c(i:(i+1)),-c(1:5)]
   #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
   test_means = apply(tt, 2, mean)
   #if any value is 2, that indicates a change in resistance profile, record it
   #note in theory there would be duplication if sample 1 is diff from sample 2, and sample 2 is diff from sample 3 (sample 2 would be recorded twice)
-  if(any(test_means == 2, na.rm = T)) interesting_samples = c(interesting_samples,
-                                                              staph_isolates_profiles$CultureIsoID[i],
-                                                              staph_isolates_profiles$CultureIsoID[i+1])
+  if(any(test_means == 2, na.rm = T)) interesting_samples_mrsa = c(interesting_samples_mrsa,
+                                                                   staph_isolates_profiles_mrsa$CultureIsoID[i],
+                                                                   staph_isolates_profiles_mrsa$CultureIsoID[i+1])
+}
+
+interesting_samples_mssa = c()
+
+staph_isolates_profiles_mssa = staph_isolates_profiles %>%
+  filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus")
+
+#heavy lifting here
+#for each row, if the patient, species and source are the same, compare the resistance profiles
+#if there is any 2 in the comparison, that indicates a difference, and is recorded
+for(i in 1:(nrow(staph_isolates_profiles_mssa)-1)){
+  
+  if(staph_isolates_profiles_mssa$project_id[i] != staph_isolates_profiles_mssa$project_id[i+1]) next
+  # if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
+  
+  #extract the two profiles compared
+  tt = staph_isolates_profiles_mssa[c(i:(i+1)),-c(1:5)]
+  #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
+  test_means = apply(tt, 2, mean)
+  #if any value is 2, that indicates a change in resistance profile, record it
+  #note in theory there would be duplication if sample 1 is diff from sample 2, and sample 2 is diff from sample 3 (sample 2 would be recorded twice)
+  if(any(test_means == 2, na.rm = T)) interesting_samples_mssa = c(interesting_samples_mssa,
+                                                                   staph_isolates_profiles_mssa$CultureIsoID[i],
+                                                                   staph_isolates_profiles_mssa$CultureIsoID[i+1])
 }
 
 
 #this is a list of samples, where: samples are from the same patient, the same source (eg nose), the same species (mrsa or mssa),
 # but show a different resistant profile. No limits on dates currently, just have to be subsequent in the data (ie sample is different from
 # the one immediately before it chronologically)
-changing_profiles = staph_isolates_profiles %>%
-  filter(CultureIsoID %in% interesting_samples)
+changing_profiles_mrsa = staph_isolates_profiles %>%
+  filter(CultureIsoID %in% interesting_samples_mrsa)
 
-
+changing_profiles_mssa = staph_isolates_profiles %>%
+  filter(CultureIsoID %in% interesting_samples_mssa)
 
 
 profile_changes = data.frame(project_id = "test_id",
                              species = "test", 
                              first_source = "test",
                              second_source = "test",
-                             first_date = changing_profiles$date[1],
+                             first_date = changing_profiles_mssa$date[1],
                              first_lab_id = "test",
-                             second_date = changing_profiles$date[1],
+                             second_date = changing_profiles_mssa$date[1],
                              second_lab_id = "test",
                              antibiotic = "test",
                              change = 0)
 
-for(i in 1:(nrow(changing_profiles)-1)){
+for(i in 1:(nrow(changing_profiles_mrsa)-1)){
   
-  if(changing_profiles$project_id[i] != changing_profiles$project_id[i+1]) next
-  if(changing_profiles$SpeciesName[i] != changing_profiles$SpeciesName[i+1]) next
+  if(changing_profiles_mrsa$project_id[i] != changing_profiles_mrsa$project_id[i+1]) next
   # if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
   
   #extract the two profiles compared
-  tt = changing_profiles[c(i:(i+1)),-c(1:5)]
+  tt = changing_profiles_mrsa[c(i:(i+1)),-c(1:5)]
   #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
   check = which(apply(tt, 2, mean) == 2)
   #needs a quick check because of the way this dataset was compiled
@@ -98,14 +126,48 @@ for(i in 1:(nrow(changing_profiles)-1)){
   
   for(j in 1:ncol(tt)){
     profile_changes = rbind(profile_changes,
-                            data.frame(project_id = changing_profiles$project_id[i],
-                                       species = changing_profiles$SpeciesName[i],
-                                       first_source = changing_profiles$SpecimenType[i],
-                                       second_source = changing_profiles$SpecimenType[i+1],
-                                       first_date = changing_profiles$date[i],
-                                       first_lab_id = changing_profiles$CultureIsoID[i],
-                                       second_date = changing_profiles$date[i+1],
-                                       second_lab_id = changing_profiles$CultureIsoID[i+1],
+                            data.frame(project_id = changing_profiles_mrsa$project_id[i],
+                                       species = changing_profiles_mrsa$SpeciesName[i],
+                                       first_source = changing_profiles_mrsa$SpecimenType[i],
+                                       second_source = changing_profiles_mrsa$SpecimenType[i+1],
+                                       first_date = changing_profiles_mrsa$date[i],
+                                       first_lab_id = changing_profiles_mrsa$CultureIsoID[i],
+                                       second_date = changing_profiles_mrsa$date[i+1],
+                                       second_lab_id = changing_profiles_mrsa$CultureIsoID[i+1],
+                                       antibiotic = colnames(tt)[j],
+                                       change = tt[1,j] - tt[2,j]))
+  }
+  
+}
+
+for(i in 1:(nrow(changing_profiles_mssa)-1)){
+  
+  if(changing_profiles_mssa$project_id[i] != changing_profiles_mssa$project_id[i+1]) next
+  # if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
+  
+  #extract the two profiles compared
+  tt = changing_profiles_mssa[c(i:(i+1)),-c(1:5)]
+  #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
+  check = which(apply(tt, 2, mean) == 2)
+  #needs a quick check because of the way this dataset was compiled
+  #2 subsequent rows may not correspond to 2 different profiles!
+  #eg if sample 1 and sample 2 are diff, but sample 2 and 3 are not, and sample 3 and 4 are, the dataset would still list: sample 1 2 3 4
+  #yet, comparison between samples 2 and 3 in this loop would crash because they're identical
+  if(length(check) == 0) next
+  
+  tt = tt %>%
+    select(all_of(check))
+  
+  for(j in 1:ncol(tt)){
+    profile_changes = rbind(profile_changes,
+                            data.frame(project_id = changing_profiles_mssa$project_id[i],
+                                       species = changing_profiles_mssa$SpeciesName[i],
+                                       first_source = changing_profiles_mssa$SpecimenType[i],
+                                       second_source = changing_profiles_mssa$SpecimenType[i+1],
+                                       first_date = changing_profiles_mssa$date[i],
+                                       first_lab_id = changing_profiles_mssa$CultureIsoID[i],
+                                       second_date = changing_profiles_mssa$date[i+1],
+                                       second_lab_id = changing_profiles_mssa$CultureIsoID[i+1],
                                        antibiotic = colnames(tt)[j],
                                        change = tt[1,j] - tt[2,j]))
   }
@@ -161,6 +223,7 @@ admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
 
 profile_changes$same_hosp = F
 
+#hereherehere!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 for(i in 1:nrow(profile_changes)){
   
   admissions_i = admissions %>%
@@ -207,16 +270,16 @@ for(i in 1:(nrow(profile_changes))){
   #only take patients which were hospitalised in the same ward within the 7 days before the 2nd sample was taken for the patient of interest
   hosp_j = admissions %>%
     filter(ward_code == hosp_i$ward_code[1]) %>%
-    mutate(valid = int_overlaps(interval(start_datetime, end_datetime), interval((profile_changes$second_date[i]-7), profile_changes$second_date[i]))) %>%
+    mutate(valid = int_overlaps(interval(start_datetime, end_datetime), interval((profile_changes$second_date[i]-30), profile_changes$second_date[i]))) %>%
     filter(valid == T) %>%
     filter(project_id != profile_changes$project_id[i])
   
   if(nrow(hosp_j) == 0) next
   
-  #from those patients, only look at any sample taken 7 days before the 2nd sample was taken for the patient of interest
+  #from those patients, only look at any sample taken 30 days before the 2nd sample was taken for the patient of interest
   test_samples = staph_isolates_profiles %>%
     filter(project_id %in% unique(hosp_j$project_id)) %>%
-    filter(date <= profile_changes$second_date[i] & date > (profile_changes$second_date[i]-7)) %>%
+    filter(date <= profile_changes$second_date[i] & date > (profile_changes$second_date[i]-30)) %>%
     select(-c(2:5))
   
   if(nrow(test_samples) == 0) next
@@ -282,38 +345,3 @@ profile_changes = profile_changes %>%
   mutate(change = replace(change, change == "2", "S"))
 
 write.csv(profile_changes, here::here("Clean", "res_profiles_diversity.csv"), row.names = F)
-
-profile_changes = read.csv(here::here("Clean", "res_profiles_diversity.csv")) %>%
-  mutate(first_date = as_date(first_date)) %>%
-  mutate(second_date = as_date(second_date))
-
-table(profile_changes$any_antibiotic)
-table(profile_changes$antibiotic_use)
-
-profile_changes %>%
-  filter(same_date == F) %>%
-  filter(same_hosp == T) %>%
-  filter(antibiotic_use == T) %>%
-  filter(change == "R")
-
-profile_changes %>%
-  filter(same_date == T) %>%
-  select(antibiotic) %>%
-  pull %>%
-  table %>%
-  sort
-
-profile_changes %>%
-  filter(same_date == F) %>%
-  select(antibiotic) %>%
-  pull %>%
-  table %>%
-  sort
-
-profile_changes %>%
-  filter(same_date == F) %>%
-  filter(any_antibiotic == T) %>%
-  select(antibiotic) %>%
-  pull %>%
-  table %>%
-  sort
