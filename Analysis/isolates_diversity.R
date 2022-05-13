@@ -1,10 +1,10 @@
 library(ppcor)
-library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(lubridate)
 library(reshape2)
 library(FSA)
+library(dplyr)
 
 
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
@@ -25,7 +25,7 @@ good_cols = which(colSums(staph_isolates_sr, na.rm = T) > 50)
 good_rows = which(rowSums(staph_isolates_sr, na.rm = T) > 0)
 
 staph_isolates_profiles = staph_isolates %>%
-  select(c(1:5,(good_cols+5)))
+  dplyr::select(c(1:5,(good_cols+5)))
 
 staph_isolates_profiles = staph_isolates_profiles %>%
   filter(row_number() %in% good_rows)
@@ -35,7 +35,7 @@ good_ids = staph_isolates_profiles %>%
   group_by(project_id) %>%
   summarise(n = n()) %>%
   filter(n > 1) %>%
-  select(project_id) %>%
+  dplyr::select(project_id) %>%
   pull
 
 staph_isolates_profiles = staph_isolates_profiles %>%
@@ -45,8 +45,6 @@ diffs_data = data.frame(project_id = staph_isolates_profiles$project_id[1],
                         date = staph_isolates_profiles$date[1],
                         species = "staph",
                         samples = 0,
-                        #diversity_score = 0,
-                        #diffs = 0,
                         n_profiles = 0)
 abx_diffs = c()
 #heavy lifting here
@@ -65,7 +63,7 @@ for(i in unique(staph_isolates_profiles$project_id)){
       
       compare_k = compare_j %>%
         filter(SpeciesName == k) %>%
-        select(-c(1:5)) 
+        dplyr::select(-c(1:5)) 
       
       #skip if just one sample
       if(nrow(compare_k) == 1) next
@@ -99,43 +97,12 @@ for(i in unique(staph_isolates_profiles$project_id)){
         }
       }
       
-      # #compare all profiles
-      # #a mean between 1 and 3 will indicate a difference
-      # #na.rm means we're ignoring NAs instead of assuming they're resistant or susceptible
-      # tt = apply(compare_k, 2, mean, na.rm = T)
-      # #standardise
-      # tt[is.nan(tt)] = 1
-      # tt[tt <= 2] = tt[tt <= 2] - 1
-      # tt[tt > 2] = 3 - tt[tt > 2]
-      # #this way, diffs values are between 0 and 1
-      # #a diff of 1 means that there is maximum diversity (half of samples are S/R, other half are R/S)
-      # #a diff of 0 means no difference across samples
-      # 
-      # abx_diffs = c(abx_diffs, names(tt[tt!=0]))
-      # 
-      # # #diversity assuming NA = R
-      # # div_r_assum = compare_k %>%
-      # #   mutate(across(everything(), ~replace(., is.na(.), 3))) %>%
-      # #   distinct %>%
-      # #   nrow
-      # # 
-      # # #diversity assuming NA = S
-      # # div_s_assum = compare_k %>%
-      # #   mutate(across(everything(), ~replace(., is.na(.), 1))) %>%
-      # #   distinct %>%
-      # #   nrow
-      # 
-      
       diffs_data_k = data.frame(project_id = i,
                                 date = as_date(j),
                                 species = k,
                                 samples = nrow(compare_k),
-                                #diversity_score = mean(tt),
-                                #diffs = sum(tt!=0),
                                 n_profiles = profiles_k)
-      # upper_div = max(div_r_assum, div_s_assum),
-      # lower_div = min(div_r_assum, div_s_assum))
-      
+
       diffs_data = rbind(diffs_data, diffs_data_k)
       
     }

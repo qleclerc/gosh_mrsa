@@ -7,6 +7,9 @@ library(ggplot2)
 library(scales)
 library(cowplot)
 
+mrsa_col = "#EFC000FF"
+mssa_col = "#0073C2FF"
+
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
@@ -108,7 +111,8 @@ pa = staph_resistances %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12))
+        legend.text = element_text(size = 12)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 pb = staph_resistances %>%
   filter(value == "R") %>%
@@ -123,7 +127,8 @@ pb = staph_resistances %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12))
+        legend.text = element_text(size = 12)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 pc = staph_resistances %>%
   filter(value == "R") %>%
@@ -138,7 +143,8 @@ pc = staph_resistances %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12))
+        legend.text = element_text(size = 12)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 pd = staph_resistances %>%
   filter(value == "R") %>%
@@ -153,7 +159,8 @@ pd = staph_resistances %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12))
+        legend.text = element_text(size = 12)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 plot_grid(plot_grid(pa + theme(legend.position = "none"),
                     plot_grid(pb + theme(legend.position = "none"),
@@ -166,6 +173,21 @@ plot_grid(plot_grid(pa + theme(legend.position = "none"),
           nrow = 2, rel_heights = c(1,0.1))
 
 ggsave(here::here("Figures", "fig4.png"), height = 10, width = 14)
+
+sp1 = staph_resistances %>%
+  filter(value == "R") %>%
+  ggplot() +
+  geom_line(aes(date, prop, colour = SpeciesName)) +
+  facet_wrap(~variable) +
+  theme_bw() +
+  scale_y_continuous(limits = c(0,1)) +
+  labs(x = "Time (months)", y = "Proportion of isolates resistant to antibiotic", colour = "") +
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col)) +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(here::here("Figures", "suppfig3.png"), sp1, height = 12, width = 12)
+
 
 #supp correlations
 #remove resistances with less than 50 resistant isolates over all time period
@@ -222,64 +244,3 @@ png(here::here("Figures", "suppfig2.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()
-
-## antibiotic classes ####
-
-# abx_classes = data.frame(variable = c("Amik.Fluclox", "Amikacin", "Ampicillin", 
-#                                       "Augmentin", "Cefotaxime", "Ceftazidime","Cephradine",
-#                                       "Chloramphenicol", "Ciprofloxacin", "Colistin",
-#                                       "Erythromycin", "Flucloxacillin", 
-#                                       "Fucidin", "Gent.Ceftaz", "Gent.Cipro", "Gent.Pip.Taz",
-#                                       "Gentamicin", "Mupirocin", "Naladixic.Acid",
-#                                       "Neomycin", "Nitrofurantoin", "Penicillin",
-#                                       "Piperacillin...Tazobactam", "Pip.Taz.Amik",
-#                                       "Pip.Taz.Cipro", "Rifampicin", "Teicoplanin",
-#                                       "Tetracycline", "Trimethoprim", "Vancomycin",
-#                                       "Sulphonamide", "Oxacillin", "Pristinomycin",
-#                                       "Tobramycin", "Mecillinam", "Syncercid",
-#                                       "Ceftriaxone", "Septrin", "Cefuroxime",
-#                                       "Linezolid", "Clindamycin", "Timentin",
-#                                       "Imipenem", "Meropenem", "Tigecycline",
-#                                       "Daptomycin", "Doxycycline", "Minocycline",
-#                                       "Fosfomycin", "Metronidazole", "Cefoxitin",
-#                                       "Co.Trimoxazole..Septrin."),
-#                          class = c("Mixed", 
-#                                    "Aminoglycosides", "Penicillins", "Penicillins",
-#                                    "Cephalosporins", "Cephalosporins", "Cephalosporins",
-#                                    "Chloramphenicol", "Fluoroquinolones", "Polypetides",
-#                                    "Macrolides", "Penicillins", "Fucidin", "Mixed", 
-#                                    "Mixed", "Mixed", "Aminoglycosides", "Mupirocin",
-#                                    "Fluoroquinolones", "Aminoglycosides",
-#                                    "Nitrofurans", "Penicillins", "Mixed", "Mixed", 
-#                                    "Mixed", "Antimycobacterials", "Glycopeptides",
-#                                    "Tetracyclines", "Trimethoprim", "Glycopeptides",
-#                                    "Sulphonamides", "Penicillins", "Pristinomycin", 
-#                                    "Aminoglycosides", "Penicillins", "Syncercid",
-#                                    "Cephalosporins", "Sulfonamides", "Cephalosporins",
-#                                    "Oxazolidinones", "Lincosamides", "Mixed",
-#                                    "Carbapenems", "Carbapenems", "Tigecycline",
-#                                    "Lipopetides", "Tetracyclines", "Tetracyclines",
-#                                    "Fosfomycin", "Metronidazole", "Cephalosporins", 
-#                                    "Sulfonamides"))
-# 
-# staph_resistances = left_join(staph_resistances, abx_classes, by = "variable")
-# 
-# classes = unique(staph_resistances$class)
-# 
-# for(i in c(1,4,7,10,12)){
-#   
-#   pp = staph_resistances %>%
-#     group_by(date, class, value) %>%
-#     summarise(n = sum(n)) %>%
-#     mutate(prop = n/sum(n)) %>%
-#     filter(value == "R") %>%
-#     filter(class %in% classes[i:(i+2)]) %>%
-#     ggplot() +
-#     geom_line(aes(date, prop, colour = class)) +
-#     theme_bw() +
-#     scale_y_continuous(limits = c(0,1))
-#   
-#   plot(pp)
-#   
-# }
-# 

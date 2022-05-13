@@ -244,6 +244,7 @@ antibio_data = read.csv(here::here("Clean", "antibio_data.csv")) %>%
   mutate(date = as_date(start_datetime))
 
 profile_changes$antibiotic_use = FALSE
+profile_changes$any_antibiotic = FALSE
 
 for(i in 1:(nrow(profile_changes))){
   
@@ -251,6 +252,12 @@ for(i in 1:(nrow(profile_changes))){
     filter(project_id == profile_changes$project_id[i])
   
   if(nrow(antibio_i) == 0) next
+  
+  antibio_any = antibio_i %>%
+    mutate(valid = (profile_changes$second_date[i] %within% interval(date-30, date))) %>%
+    filter(valid == T)
+  
+  if(nrow(antibio_any) != 0) profile_changes$any_antibiotic[i] = TRUE
   
   antibio_name = profile_changes$class[i]
   
@@ -275,14 +282,13 @@ profile_changes = profile_changes %>%
   mutate(change = replace(change, change == "2", "S"))
 
 write.csv(profile_changes, here::here("Clean", "res_profiles_diversity.csv"), row.names = F)
-profile_changes = read.csv(here::here("Clean", "res_profiles_diversity.csv")) %>%
-  mutate(first_date = as_date(first_date)) %>%
-  mutate(second_date = as_date(second_date))
-
 
 profile_changes = read.csv(here::here("Clean", "res_profiles_diversity.csv")) %>%
   mutate(first_date = as_date(first_date)) %>%
   mutate(second_date = as_date(second_date))
+
+table(profile_changes$any_antibiotic)
+table(profile_changes$antibiotic_use)
 
 profile_changes %>%
   filter(same_date == F) %>%
@@ -306,7 +312,7 @@ profile_changes %>%
 
 profile_changes %>%
   filter(same_date == F) %>%
-  filter(antibiotic_use == T) %>%
+  filter(any_antibiotic == T) %>%
   select(antibiotic) %>%
   pull %>%
   table %>%

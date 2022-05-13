@@ -25,8 +25,7 @@ interesting_samples = c()
 for(i in 1:(nrow(staph_isolates_profiles)-1)){
   
   if(staph_isolates_profiles$project_id[i] != staph_isolates_profiles$project_id[i+1]) next
-  # if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
-  
+
   if(staph_isolates_profiles$SpeciesName[i] != staph_isolates_profiles$SpeciesName[i+1]){
     interesting_samples = c(interesting_samples,
                             staph_isolates_profiles$CultureIsoID[i],
@@ -34,9 +33,6 @@ for(i in 1:(nrow(staph_isolates_profiles)-1)){
   }
 }
 
-
-#this is a list of samples, where: samples are from the same patient, the same source (eg nose)
-# but show a different species.
 changing_profiles = staph_isolates_profiles %>%
   filter(CultureIsoID %in% interesting_samples)
 
@@ -82,6 +78,7 @@ admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
   filter(!is.na(end_datetime))
 
 profile_changes$same_hosp = F
+profile_changes$los = 0
 
 for(i in 1:nrow(profile_changes)){
   
@@ -92,8 +89,11 @@ for(i in 1:nrow(profile_changes)){
   
   for(j in 1:nrow(admissions_i)){
     
-    if(profile_changes$first_date[i] >= admissions_i$start_datetime[j] && profile_changes$second_date[i] <= admissions_i$end_datetime[j]) profile_changes$same_hosp[i] = T
-    
+    if(profile_changes$first_date[i] >= admissions_i$start_datetime[j] &&
+       profile_changes$second_date[i] <= admissions_i$end_datetime[j]){
+      profile_changes$same_hosp[i] = T
+      profile_changes$los[i] = admissions_i$end_datetime[j] - admissions_i$start_datetime[j]
+    }
   }
   
 }
@@ -108,7 +108,7 @@ profile_changes = profile_changes %>%
   mutate(same_source = (first_source == second_source))
 
 #add column to check if could be nosocomial
-#decided if there is a matching resistance profile in any patient within 1 week before the change is detected
+#decided if there is a matching resistance profile in any patient within 30 days before the change is detected
 profile_changes$possible_nos = 0
 profile_changes$possible_nos_ward = ""
 

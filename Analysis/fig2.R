@@ -7,6 +7,9 @@ library(Hmisc)
 library(corrplot)
 library(cowplot)
 
+mrsa_col = "#EFC000FF"
+mssa_col = "#0073C2FF"
+
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
@@ -22,10 +25,10 @@ p1 = ggplot(staph_isolates) +
   geom_jitter(aes(n_test, n_res, colour = SpeciesName), alpha = 0.3) +
   geom_smooth(data = staph_isolates %>% 
                 filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus"),
-              aes(n_test, n_res), method = "lm", colour = "red") +
+              aes(n_test, n_res), method = "lm", colour = "yellow4") +
   geom_smooth(data = staph_isolates %>%
                 filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"),
-              aes(n_test, n_res), method = "lm", colour = "blue") +
+              aes(n_test, n_res), method = "lm", colour = "blue4") +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   theme_bw() +
   labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances detected",
@@ -34,7 +37,8 @@ p1 = ggplot(staph_isolates) +
         axis.title = element_text(size = 12),
         legend.text = element_text(size = 12),
         legend.position = "bottom") +
-  scale_x_continuous(breaks = seq(0,30,5))
+  scale_x_continuous(breaks = seq(0,30,5)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 #significant correlation, but r^2 = 0.14 and 0.34 suggesting not all var in n res explained by n tests 
 summary(lm(data = staph_isolates %>% 
@@ -91,7 +95,8 @@ p2 = staph_isolates %>%
         legend.text = element_text(size = 12),
         legend.position = "bottom") +
   labs(x = "Time (years)", y = "Number of susceptibility tests\nconducted per isolate", colour = "") +
-  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
@@ -113,7 +118,8 @@ p3 = staph_isolates %>%
         legend.text = element_text(size = 12),
         legend.position = "bottom") +
   labs(x = "Time (years)", y = "Number of antibiotic resistances\ndetected per isolate") +
-  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 
 pall = plot_grid(p1 + theme(legend.position = "none"),
