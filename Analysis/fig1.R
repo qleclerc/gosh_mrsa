@@ -69,7 +69,7 @@ p3 = staph_isolates %>%
   geom_boxplot(aes(date, n, group = interaction(date, SpeciesName), colour = SpeciesName),
                outlier.shape = NA, size = 0.8) +
   theme_bw() +
-  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
   labs(x = "Time (years)", y = "Number of isolates per patient", colour = "") +
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),

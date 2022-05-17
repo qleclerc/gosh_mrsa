@@ -25,7 +25,8 @@ summary(lm(data = staph_isolates,
            n_res ~ n_test + SpeciesName))
 
 #link between number of tests and resistances
-p1 = ggplot(staph_isolates) +
+p1 = staph_isolates %>%
+  ggplot() +
   geom_jitter(aes(n_test, n_res, colour = SpeciesName), alpha = 0.3) +
   geom_smooth(data = staph_isolates %>% 
                 filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus"),
@@ -42,6 +43,7 @@ p1 = ggplot(staph_isolates) +
         legend.text = element_text(size = 12),
         legend.position = "bottom") +
   scale_x_continuous(breaks = seq(0,30,5)) +
+  coord_cartesian(ylim = c(0,20), xlim = c(0,30)) +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
 
@@ -163,3 +165,43 @@ pall = plot_grid(p1 + theme(legend.position = "none"),
                  hjust = 0)
 
 ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 12, dpi = 300)
+
+
+
+sp1 = staph_isolates %>%
+  filter(date < as.Date("2010-12-31")) %>%
+  ggplot() +
+  geom_jitter(aes(n_test, n_res, colour = SpeciesName), alpha = 0.3) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  theme_bw() +
+  labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances detected",
+       colour = "") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0,30,5)) +
+  coord_cartesian(ylim = c(0,20), xlim = c(0,30)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
+
+sp2 = staph_isolates %>%
+  filter(date > as.Date("2010-12-31")) %>%
+  ggplot() +
+  geom_jitter(aes(n_test, n_res, colour = SpeciesName), alpha = 0.3) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  theme_bw() +
+  labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances detected",
+       colour = "") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(0,30,5)) +
+  coord_cartesian(ylim = c(0,20), xlim = c(0,30)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
+
+plot_grid(plot_grid(sp1+theme(legend.position = "none"), sp2+theme(legend.position = "none"),
+                    nrow = 1, labels = c("a)", "b)"), hjust = 0),
+          get_legend(sp1), nrow = 2, rel_heights = c(1,0.1))
+
+ggsave(here::here("Figures", "suppfig1.png"), height = 5, width = 10, dpi = 300)

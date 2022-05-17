@@ -223,7 +223,6 @@ admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
 
 profile_changes$same_hosp = F
 
-#hereherehere!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 for(i in 1:nrow(profile_changes)){
   
   admissions_i = admissions %>%

@@ -186,7 +186,7 @@ sp1 = staph_resistances %>%
   scale_colour_manual(values = c(mrsa_col, mssa_col)) +
   theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(here::here("Figures", "suppfig3.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig4.png"), sp1, height = 12, width = 12)
 
 
 #supp correlations
@@ -214,7 +214,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig1.png"), width = 1100, height = 700)
+png(here::here("Figures", "suppfig2.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()
@@ -240,7 +240,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig2.png"), width = 1100, height = 700)
+png(here::here("Figures", "suppfig3.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()

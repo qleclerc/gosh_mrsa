@@ -62,7 +62,21 @@ all_isolates = rbind(mrsa_isolates_m, mssa_isolates_m) %>%
   tibble() %>%
   complete(date, variable, species)
 
-p1 = ggplot(all_isolates %>% 
+p1 = ggplot(all_isolates %>%
+              filter(variable %in% c("Mupirocin"))) +
+  geom_line(aes(date, n/total, colour = species)) +
+  scale_y_continuous(limits = c(0,1)) +
+  facet_wrap(~variable, nrow = 1) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        legend.text = element_text(size = 12)) +
+  labs(x = "Time (months)", y = "Proportion of isolates tested") +
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col))
+
+p2 = ggplot(all_isolates %>% 
               filter(variable %in% c("Fosfomycin", "Cotrimoxazole")) %>%
               mutate(variable = factor(variable, levels = c("Cotrimoxazole", "Fosfomycin")))) +
   geom_line(aes(date, n/total, colour = species)) +
@@ -77,22 +91,8 @@ p1 = ggplot(all_isolates %>%
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
-p2 = ggplot(all_isolates %>% 
+p3 = ggplot(all_isolates %>% 
               filter(variable %in% c("Clindamycin", "Cefoxitin"))) +
-  geom_line(aes(date, n/total, colour = species)) +
-  scale_y_continuous(limits = c(0,1)) +
-  facet_wrap(~variable, nrow = 1) +
-  theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12)) +
-  labs(x = "Time (months)", y = "Proportion of isolates tested") +
-  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
-
-p3 = ggplot(all_isolates %>%
-              filter(variable %in% c("Mupirocin"))) +
   geom_line(aes(date, n/total, colour = species)) +
   scale_y_continuous(limits = c(0,1)) +
   facet_wrap(~variable, nrow = 1) +
@@ -135,16 +135,16 @@ p5 = ggplot(all_isolates %>%
 
 plot_grid(plot_grid(plot_grid(plot_grid(p1 + theme(legend.position = "none"),
                                         NULL,
-                                        p2 + theme(legend.position = "none"),
-                                        nrow = 3, rel_heights = c(1,0.05,1),
-                                        labels = c("a)", "", "b)"), hjust = 0, label_size = 12),
-                              NULL,
-                              plot_grid(p3 + theme(legend.position = "none"),
-                                        NULL,
                                         p4 + theme(legend.position = "none"),
                                         ncol = 1, rel_heights = c(0.5, 0.05, 1),
-                                        labels = c("c)", "", "d)"), hjust = 0, label_size = 12),
-                              ncol = 3, rel_widths = c(1,0.05,0.7)),
+                                        labels = c("a)", "", "d)"), hjust = 0, label_size = 12),
+                              NULL,
+                              plot_grid(p2 + theme(legend.position = "none"),
+                                        NULL,
+                                        p3 + theme(legend.position = "none"),
+                                        nrow = 3, rel_heights = c(1,0.05,1),
+                                        labels = c("b)", "", "c)"), hjust = 0, label_size = 12),
+                              ncol = 3, rel_widths = c(0.7,0.05,1)),
                     NULL,
                     p5 + theme(legend.position = "none"),
                     rel_widths = c(1,0.05,0.4), nrow = 1, labels = c("", "", "e)")),
@@ -207,4 +207,4 @@ sp1 = ggplot(all_isolates) +
   scale_colour_manual(values = c(mrsa_col, mssa_col)) +
   theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(here::here("Figures", "suppfig4.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig5.png"), sp1, height = 12, width = 12)
