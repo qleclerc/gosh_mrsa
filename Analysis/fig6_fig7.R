@@ -65,7 +65,7 @@ pa = right_join(mrsa_mssa_diversity %>%
   ggplot() +
   geom_line(aes(date, prop), size = 0.8) +
   theme_bw() +
-  labs(x = "Time (years)", y = "Proportion of patients with\nMRSA-MSSA diversity") +
+  labs(x = "Time (years)", y = "Proportion of patients\nwith MRSA-MSSA diversity") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12)) +
   scale_y_continuous(limits = c(0,0.04), breaks = seq(0,0.04,0.01)) +
@@ -114,14 +114,13 @@ pc = isolates_diversity %>%
   summarise(n = n()) %>%
   mutate(n = n/sum(n)) %>%
   ggplot() +
-  geom_col(aes(as.factor(n_profiles), n, fill = species)) +
-  facet_wrap(~species) +
+  geom_col(aes(as.factor(n_profiles), n, fill = species), position = position_dodge(0.9)) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "Number of unique resistance profiles identified within the same patient",
+  labs(x = "Unique resistance profiles identified within the same patient",
        y = "Proportion") +
   scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
   scale_fill_manual(values = c(mrsa_col, mssa_col))
@@ -135,30 +134,84 @@ pd = res_profiles_diversity %>%
   summarise(n = n()) %>%
   mutate(n = n/sum(n)) %>%
   ggplot() +
-  geom_col(aes(as.factor(n_diffs), n, fill = species)) +
-  facet_wrap(~species) +
+  geom_col(aes(as.factor(n_diffs), n, fill = species), position = position_dodge(0.9)) +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "Number of differing resistances between isolates within the same patient",
+  labs(x = "Differing resistances between strains within the same patient",
        y = "Proportion") +
   scale_y_continuous(limits = c(0,1,0.2), breaks = seq(0,1,0.2)) +
   scale_fill_manual(values = c(mrsa_col, mssa_col))
 
 
-plot_grid(plot_grid(pa, NULL, pb,
+#which changes for each abx
+#R vs S changes
+res_m = res_profiles_diversity %>%
+  filter(same_date == T) %>%
+  group_by(species, antibiotic) %>%
+  summarise(n = n()) %>%
+  group_by(species) %>%
+  mutate(prop = n/sum(n)) %>%
+  tibble() %>%
+  complete(species, antibiotic)
+res_m[is.na(res_m)] = 0
+
+top10mrsa = res_m %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  group_by(antibiotic) %>%
+  summarise(n = sum(n)) %>%
+  arrange(-n) %>%
+  select(antibiotic) %>% pull %>% .[1:10]
+
+top10mssa = res_m %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  group_by(antibiotic) %>%
+  summarise(n = sum(n)) %>%
+  arrange(-n) %>%
+  select(antibiotic) %>% pull %>% .[1:10]
+
+pe = ggplot(res_m %>%
+              filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+              filter(antibiotic %in% top10mrsa) %>%
+              mutate(antibiotic = factor(antibiotic, levels = top10mrsa))) +
+  geom_col(aes(antibiotic, prop),
+           colour = "white", fill = mrsa_col) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12),
+        legend.position = "none") +
+  labs(x = "", y = "Proportion of changes")
+
+pf = ggplot(res_m %>%
+              filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+              filter(antibiotic %in% top10mssa) %>%
+              mutate(antibiotic = factor(antibiotic, levels = top10mssa))) +
+  geom_col(aes(antibiotic, prop),
+           colour = "white", fill = mssa_col) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12),
+        legend.position = "none") +
+  labs(x = "", y = "Proportion of changes")
+
+
+plot_grid(plot_grid(pa, NULL, pb + theme(legend.position = "none"),
                     ncol = 1,
-                    rel_heights = c(0.8,0.01,1),
-                    labels = c("a)", "", "b)")),
+                    rel_heights = c(0.8,0.01,0.8),
+                    labels = c("a)", "", "b)"), hjust = 0),
           NULL,
-          pc,
+          plot_grid(pc, NULL, pd, nrow = 1, labels = c("c)", "", "d)"),
+                    rel_widths = c(1,0.05,1), hjust = 0),
           NULL,
-          pd,
+          plot_grid(pe, NULL, pf, nrow = 1, labels = c("e)", "", "f)"),
+                    rel_widths = c(1,0.05,1), hjust = 0),
+          get_legend(pb),
           ncol = 1,
-          rel_heights = c(1,0.01,0.4,0.01,0.4),
-          labels = c("", "", "c)", "", "d)"))
+          rel_heights = c(0.7,0.01,0.4,0.01,0.4,0.1))
 
 ggsave(here::here("Figures", "fig6.png"), height = 14, width = 11)
 
@@ -379,9 +432,9 @@ top10mssa = res_m %>%
   select(antibiotic) %>% pull %>% .[1:10]
 
 pf = ggplot(res_m %>%
-         filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
-         filter(antibiotic %in% top10mrsa) %>%
-         mutate(antibiotic = factor(antibiotic, levels = top10mrsa))) +
+              filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+              filter(antibiotic %in% top10mrsa) %>%
+              mutate(antibiotic = factor(antibiotic, levels = top10mrsa))) +
   geom_col(data = . %>%
              filter(antibiotic_use == F),
            aes(antibiotic, prop, fill = change), colour = "white", position = position_dodge(), alpha = 0.5) +
@@ -402,9 +455,9 @@ pf = ggplot(res_m %>%
   scale_fill_manual(values = c(mrsa_col, mrsa_col))
 
 pg = ggplot(res_m %>%
-         filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
-         filter(antibiotic %in% top10mssa) %>%
-         mutate(antibiotic = factor(antibiotic, levels = top10mssa))) +
+              filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+              filter(antibiotic %in% top10mssa) %>%
+              mutate(antibiotic = factor(antibiotic, levels = top10mssa))) +
   geom_col(data = . %>%
              filter(antibiotic_use == F),
            aes(antibiotic, prop, fill = change), colour = "white", position = position_dodge(), alpha = 0.5) +
