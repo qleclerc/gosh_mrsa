@@ -255,12 +255,10 @@ staph_isolates_profiles[is.na(staph_isolates_profiles)] = 0
 profile_changes$possible_nos = 0
 for(i in 1:(nrow(profile_changes))){
   
+  if(profile_changes$same_hosp[i] == F) next
+  
   hosp_i = admissions %>%
-    filter(project_id == profile_changes$project_id[i])
-  
-  if(nrow(hosp_i) == 0) next
-  
-  hosp_i = hosp_i %>%
+    filter(project_id == profile_changes$project_id[i]) %>%
     mutate(valid = (profile_changes$second_date[i] %within% interval(start_datetime, end_datetime))) %>%
     filter(valid == T)
   
@@ -269,7 +267,8 @@ for(i in 1:(nrow(profile_changes))){
   #only take patients which were hospitalised in the same ward within the 7 days before the 2nd sample was taken for the patient of interest
   hosp_j = admissions %>%
     filter(ward_code == hosp_i$ward_code[1]) %>%
-    mutate(valid = int_overlaps(interval(start_datetime, end_datetime), interval((profile_changes$second_date[i]-30), profile_changes$second_date[i]))) %>%
+    mutate(valid = int_overlaps(interval(start_datetime, end_datetime),
+                                interval(profile_changes$first_date[i], profile_changes$second_date[i]))) %>%
     filter(valid == T) %>%
     filter(project_id != profile_changes$project_id[i])
   
@@ -278,7 +277,7 @@ for(i in 1:(nrow(profile_changes))){
   #from those patients, only look at any sample taken 30 days before the 2nd sample was taken for the patient of interest
   test_samples = staph_isolates_profiles %>%
     filter(project_id %in% unique(hosp_j$project_id)) %>%
-    filter(date <= profile_changes$second_date[i] & date > (profile_changes$second_date[i]-30)) %>%
+    filter(date <= profile_changes$second_date[i] & date > profile_changes$first_date[i]) %>%
     select(-c(2:5))
   
   if(nrow(test_samples) == 0) next
