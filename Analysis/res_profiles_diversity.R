@@ -315,7 +315,8 @@ for(i in 1:(nrow(profile_changes))){
   if(nrow(antibio_i) == 0) next
   
   antibio_any = antibio_i %>%
-    mutate(valid = (profile_changes$second_date[i] %within% interval(date-30, date))) %>%
+    mutate(valid = (date %within% interval(profile_changes$first_date[i],
+                                           profile_changes$second_date[i]))) %>%
     filter(valid == T)
   
   if(nrow(antibio_any) != 0) profile_changes$any_antibiotic[i] = TRUE
@@ -328,7 +329,8 @@ for(i in 1:(nrow(profile_changes))){
   if(nrow(antibio_i) == 0) next
   
   antibio_i = antibio_i %>%
-    mutate(valid = (profile_changes$second_date[i] %within% interval(date-30, date))) %>%
+    mutate(valid = (date %within% interval(profile_changes$first_date[i],
+                                           profile_changes$second_date[i]))) %>%
     filter(valid == T)
   
   if(nrow(antibio_i) == 0) next
