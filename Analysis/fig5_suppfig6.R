@@ -207,4 +207,4 @@ sp1 = ggplot(all_isolates) +
   scale_colour_manual(values = c(mrsa_col, mssa_col)) +
   theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(here::here("Figures", "suppfig5.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig6.png"), sp1, height = 12, width = 12)

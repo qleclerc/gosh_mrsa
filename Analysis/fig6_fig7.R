@@ -93,7 +93,7 @@ pb = right_join(res_profiles_diversity %>%
   ggplot() +
   geom_line(aes(date, prop, colour = species), size = 0.8) +
   theme_bw() +
-  labs(x = "Time (years)", y = "Proportion of patients with\nresistance profile diversity",
+  labs(x = "Time (years)", y = "Proportion of patients with\nphenotypic resistance diversity",
        colour = "") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -120,7 +120,7 @@ pc = isolates_diversity %>%
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "Unique resistance profiles identified within the same patient",
+  labs(x = "Unique antibiograms recorded within the same patient",
        y = "Proportion") +
   scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
   scale_fill_manual(values = c(mrsa_col, mssa_col))
@@ -140,7 +140,7 @@ pd = res_profiles_diversity %>%
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "Differing resistances between strains within the same patient",
+  labs(x = "Differing resistances between antibiograms for the same patient",
        y = "Proportion") +
   scale_y_continuous(limits = c(0,1,0.2), breaks = seq(0,1,0.2)) +
   scale_fill_manual(values = c(mrsa_col, mssa_col))
@@ -183,7 +183,7 @@ pe = ggplot(res_m %>%
         axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
         axis.title = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "", y = "Proportion of changes")
+  labs(x = "", y = "Proportion of\ndiffering resistances")
 
 pf = ggplot(res_m %>%
               filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
@@ -196,7 +196,7 @@ pf = ggplot(res_m %>%
         axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
         axis.title = element_text(size = 12),
         legend.position = "none") +
-  labs(x = "", y = "Proportion of changes")
+  labs(x = "", y = "Proportion of\ndiffering resistances")
 
 
 plot_grid(plot_grid(pa, NULL, pb + theme(legend.position = "none"),
@@ -297,6 +297,21 @@ length(unique(mrsa_changes$project_id))
 median(mrsa_changes$delay)
 table(mrsa_changes$delay)
 
+median(mrsa_changes$los)
+quantile(mrsa_changes$los)
+admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
+  mutate(start_datetime = as_date(start_datetime)) %>%
+  mutate(end_datetime = as_date(end_datetime)) %>%
+  arrange(project_id, start_datetime) %>%
+  filter(!is.na(start_datetime)) %>%
+  filter(!is.na(end_datetime)) %>%
+  mutate(delay = end_datetime - start_datetime) %>%
+  filter(delay > 2)
+
+median(admissions$delay)
+quantile(admissions$delay)
+
+
 pa = ggplot(mrsa_changes) +
   geom_histogram(aes(delay, y = 7*..density..), binwidth = 7, colour = "white") +
   geom_vline(xintercept = median(mrsa_changes$delay), linetype = "dashed", size = 1) +
@@ -362,6 +377,7 @@ length(unique(res_profiles_changes$project_id))/length(unique(staph_isolates$pro
 
 median(res_profiles_changes$delay)
 table(res_profiles_changes$delay)
+sum(res_profiles_changes$delay <= 60)/nrow(res_profiles_changes)
 
 pd = ggplot(res_profiles_changes) +
   geom_histogram(aes(delay, y = 7*..density.., group = species, fill = species), binwidth = 7,
@@ -371,7 +387,7 @@ pd = ggplot(res_profiles_changes) +
   coord_cartesian(xlim = c(0,130)) +
   scale_y_continuous(breaks = seq(0,0.6,0.1), limits = c(0,0.6)) +
   theme_bw() +
-  labs(x = "Delay between isolates with differing resistance profile (days)", y = "Proportion",
+  labs(x = "Delay before change in detected phenotypic resistance (days)", y = "Proportion",
        fill = "") +
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
@@ -398,7 +414,7 @@ pe = right_join(res_profiles_changes %>%
   ggplot() +
   geom_line(aes(date, prop, colour = species)) +
   theme_bw() +
-  labs(x = "Time (years)", y = "Proportion of patients with changes\nin isolates resistance profile",
+  labs(x = "Time (years)", y = "Proportion of patients with changes\nin phenotypic resistance",
        colour = "") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),

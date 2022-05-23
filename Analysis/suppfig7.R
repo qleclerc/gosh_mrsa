@@ -59,8 +59,20 @@ sort(table(antibio_data$class))
 antibio_data %>%
   group_by(class) %>%
   summarise(n = length(unique(project_id))) %>%
-  arrange(n) %>%
-  mutate(n = n/20000*100)
+  arrange(-n) %>%
+  mutate(n = n/22206) %>%
+  mutate(class = replace(class, class == "Fusidic_acid", "Fucidin")) %>%
+  mutate(class = factor(class, levels = class)) %>%
+  ggplot() +
+  geom_col(aes(class, n)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12)) +
+  labs(x = "", y = "Proportion of patients exposed to antibiotic")
+
+ggsave(here::here("Figures", "suppfig7.png"))
+
 
 #patients with change in a hosp, who had any abx
 abxchange = res_profiles_diversity %>%

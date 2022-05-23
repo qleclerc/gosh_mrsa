@@ -204,4 +204,4 @@ plot_grid(plot_grid(sp1+theme(legend.position = "none"), sp2+theme(legend.positi
                     nrow = 1, labels = c("a)", "b)"), hjust = 0),
           get_legend(sp1), nrow = 2, rel_heights = c(1,0.1))
 
-ggsave(here::here("Figures", "suppfig1.png"), height = 5, width = 10, dpi = 300)
+ggsave(here::here("Figures", "suppfig2.png"), height = 5, width = 10, dpi = 300)

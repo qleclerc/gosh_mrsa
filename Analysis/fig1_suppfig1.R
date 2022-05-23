@@ -91,6 +91,40 @@ plot_grid(plot_grid(p1 + theme(legend.position = "none"),
 ggsave(here::here("Figures", "fig1.png"), heigh = 14, width = 10)
 
 
+# ethnicity
+data = read.csv(here::here("Data", "caboodle_patient_demographics.csv"))
+
+admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
+  mutate(start_datetime = as_date(start_datetime)) %>%
+  mutate(end_datetime = as_date(end_datetime)) %>%
+  arrange(project_id, start_datetime) %>%
+  filter(!is.na(start_datetime)) %>%
+  filter(!is.na(end_datetime))
+
+admissions = right_join(admissions, data, "project_id")
+
+admissions %>%
+  mutate(start_datetime = floor_date(start_datetime, "month")) %>%
+  filter(start_datetime > as.Date("2000-01-01")) %>%
+  filter(start_datetime < as.Date("2021-12-01")) %>%
+  filter(ethnicity_name != "" & ethnicity_name != "Prefer Not To Say") %>%
+  mutate(ethnicity_name = replace(ethnicity_name, ethnicity_name != "White British", "Other")) %>%
+  group_by(start_datetime) %>%
+  count(ethnicity_name) %>%
+  mutate(n = n/sum(n)) %>%
+  ggplot() +
+  geom_line(aes(start_datetime, n, colour = ethnicity_name), size = 0.8) +
+  theme_bw() +
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
+  labs(x = "Time (months)", y = "Proportion of patients", colour = "Ethnicity:") +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
+
+ggsave(here::here("Figures", "suppfig1.png"))
+
 # #descriptive stats
 cat(length(unique(staph_isolates$project_id)), "patients with a positive S aureus isolate between",
     as.character(min(staph_isolates$date)), "and", as.character(max(staph_isolates$date)))
