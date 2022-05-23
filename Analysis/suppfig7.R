@@ -11,6 +11,43 @@ res_profiles_diversity = read.csv(here::here("Clean", "res_profiles_diversity.cs
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
+mrsa_mssa_diversity = read.csv(here::here("Clean", "mrsa_mssa_diversity.csv")) %>%
+  mutate(first_date = as_date(first_date),
+         second_date = as_date(second_date))
+
+mrsanoabx = table(mrsa_mssa_diversity %>%
+                    filter(change == "Methicillin-Resistant Staphylococcus aureus") %>%
+                    filter(same_hosp == T) %>%
+                    mutate(delay = as.numeric(second_date-first_date)) %>%
+                    filter(delay > 2) %>%
+                    select(any_antibiotic) %>% pull)[1]
+mrsaabx = table(mrsa_mssa_diversity %>%
+                  filter(change == "Methicillin-Resistant Staphylococcus aureus") %>%
+                  filter(same_hosp == T) %>%
+                  mutate(delay = as.numeric(second_date-first_date)) %>%
+                  filter(delay > 2) %>%
+                  select(any_antibiotic) %>% pull)[2]
+
+mssanoabx = table(mrsa_mssa_diversity %>%
+                    filter(change == "Methicillin-Susceptible Staphylococcus aureus") %>%
+                    filter(same_hosp == T) %>%
+                    mutate(delay = as.numeric(second_date-first_date)) %>%
+                    filter(delay > 2) %>%
+                    select(any_antibiotic) %>% pull)[1]
+mssaabx = table(mrsa_mssa_diversity %>%
+                  filter(change == "Methicillin-Susceptible Staphylococcus aureus") %>%
+                  filter(same_hosp == T) %>%
+                  mutate(delay = as.numeric(second_date-first_date)) %>%
+                  filter(delay > 2) %>%
+                  select(any_antibiotic) %>% pull)[2]
+
+chisq.test(matrix(c(mrsanoabx,mrsaabx,
+                    mssanoabx,mssaabx),
+                  byrow = T, nrow = 2))
+
+mrsaabx/(mrsaabx+mrsanoabx)
+mssaabx/(mssaabx+mssanoabx)
+
 
 equivalence_table = read.csv(here::here("Clean", "equivalence_table.csv"))[,-1]
 colnames(equivalence_table)[1] = "antibiotic"

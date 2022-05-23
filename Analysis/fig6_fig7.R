@@ -311,7 +311,6 @@ admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
 median(admissions$delay)
 quantile(admissions$delay)
 
-
 pa = ggplot(mrsa_changes) +
   geom_histogram(aes(delay, y = 7*..density..), binwidth = 7, colour = "white") +
   geom_vline(xintercept = median(mrsa_changes$delay), linetype = "dashed", size = 1) +
@@ -378,6 +377,8 @@ length(unique(res_profiles_changes$project_id))/length(unique(staph_isolates$pro
 median(res_profiles_changes$delay)
 table(res_profiles_changes$delay)
 sum(res_profiles_changes$delay <= 60)/nrow(res_profiles_changes)
+
+prop.table(table(res_profiles_changes$possible_nos > 0))
 
 pd = ggplot(res_profiles_changes) +
   geom_histogram(aes(delay, y = 7*..density.., group = species, fill = species), binwidth = 7,
