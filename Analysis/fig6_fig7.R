@@ -1,6 +1,7 @@
 
 library(tidyverse)
 library(ggplot2)
+library(ggtext)
 library(scales)
 library(lubridate)
 library(cowplot)
@@ -30,16 +31,43 @@ length(unique(mrsa_mssa_diversity$project_id))
 mrsa_mssa_diversity %>%
   filter(same_date == T) %>%
   select(project_id) %>% pull %>% unique %>% length
+mrsa_mssa_diversity %>%
+  filter(same_date == T) %>%
+  nrow
 #sample source
 mrsa_mssa_diversity %>%
   filter(same_date == T) %>%
   select(same_source) %>% pull %>% table %>% prop.table
 
 
+#patients with different isolates detected
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  select(project_id) %>% pull %>% unique %>% length
 #how many patients with resistance profile diversity on the same day?
 res_profiles_diversity %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
   filter(same_date == T) %>%
   select(project_id) %>% pull %>% unique %>% length
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(same_date == T) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(same_date == T) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(same_date == T) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
 
 #sample source
 res_profiles_diversity %>%
@@ -95,17 +123,21 @@ pb = right_join(res_profiles_diversity %>%
   theme_bw() +
   labs(x = "Time (years)", y = "Proportion of patients with\nphenotypic resistance diversity",
        colour = "") +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.text = element_text(size = 12),
-        legend.position = "bottom") +
   scale_y_continuous(limits = c(0,0.14), breaks = seq(0,0.14,0.02)) +
   scale_x_date(breaks = as.Date(c("2000-01-01", "2002-01-01", "2004-01-01",
                                   "2006-01-01", "2008-01-01", "2010-01-01",
                                   "2012-01-01", "2014-01-01", "2016-01-01",
                                   "2018-01-01", "2020-01-01")), date_labels = "%Y",
                limits = as.Date(c("2000-01-01", "2021-01-01"))) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        legend.text = element_markdown(size=12),
+        legend.position = "bottom")
 
 #number of unique profiles identified when diversity is identified
 pc = isolates_diversity %>%
@@ -258,6 +290,13 @@ pb = ggplot(all_delays %>% filter(delay > 2)) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))
 
+#all changes
+mrsa_mssa_diversity %>%
+  filter(same_date == F) %>%
+  select(project_id) %>% pull %>% unique %>% length
+mrsa_mssa_diversity %>%
+  filter(same_date == F) %>%
+  nrow
 #changes from mssa to mrsa
 mrsa_mssa_diversity %>%
   filter(same_date == F & change == "Methicillin-Susceptible Staphylococcus aureus") %>%
@@ -296,6 +335,10 @@ length(unique(mrsa_changes$project_id))
 
 median(mrsa_changes$delay)
 table(mrsa_changes$delay)
+
+mrsa_changes %>% filter(any_antibiotic == T) %>% nrow()
+mrsa_changes %>% filter(any_antibiotic == T) %>% select(project_id) %>% pull %>% unique %>% length
+
 
 median(mrsa_changes$los)
 quantile(mrsa_changes$los)
@@ -357,7 +400,8 @@ mrsa_changes_mys = mrsa_mssa_diversity %>%
   filter(same_hosp == T) %>%
   mutate(delay = as.numeric(second_date-first_date)) %>%
   filter(delay > 2) %>%
-  filter(possible_nos == 0)
+  filter(possible_nos == 0) %>%
+  filter(any_antibiotic == F)
 
 nrow(mrsa_changes_mys)
 length(unique(mrsa_changes_mys$project_id))
@@ -365,22 +409,111 @@ length(unique(mrsa_changes_mys$project_id))
 
 
 #changes in resistance profiles
+#how many patients with resistance profile diversity on different day?
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(same_date == F) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(same_date == F) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(same_date == F) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_diversity %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(same_date == F) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+
+
 res_profiles_changes = res_profiles_diversity %>%
   filter(same_date == F & same_hosp == T) %>%
   mutate(delay = as.numeric(second_date-first_date)) %>%
   filter(delay > 2)
 
+length(unique(res_profiles_changes$project_id))
+
+res_profiles_changes %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_changes %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_changes %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_changes %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+
+res_profiles_changes %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(possible_nos > 0) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_changes %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(possible_nos > 0) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_changes %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(possible_nos > 0) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_changes %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(possible_nos > 0) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+
+res_profiles_changes %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(antibiotic_use == T) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_changes %>%
+  filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
+  filter(antibiotic_use == T) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_changes %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(antibiotic_use == T) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_changes %>%
+  filter(species == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  filter(antibiotic_use == T) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+
 nrow(res_profiles_changes)
 length(unique(res_profiles_changes$project_id)) #number of patients
 length(unique(res_profiles_changes$project_id))/length(unique(staph_isolates$project_id)) #proportion
 
-median(res_profiles_changes$delay)
-table(res_profiles_changes$delay)
-sum(res_profiles_changes$delay <= 60)/nrow(res_profiles_changes)
+changes_delays = res_profiles_changes %>%
+  group_by(project_id, first_lab_id, species) %>%
+  summarise(delay = mean(delay)) %>%
+  select(delay) %>% pull
 
-prop.table(table(res_profiles_changes$possible_nos > 0))
+median(changes_delays)
+sum(changes_delays > 130)
 
-pd = ggplot(res_profiles_changes) +
+pd = res_profiles_changes %>%
+  group_by(project_id, first_lab_id, species) %>%
+  summarise(delay = mean(delay)) %>%
+  ggplot() +
   geom_histogram(aes(delay, y = 7*..density.., group = species, fill = species), binwidth = 7,
                  colour = "white", position = "identity", alpha = 0.5) +
   geom_vline(xintercept = median(res_profiles_changes$delay), linetype = "dashed", size = 1) +

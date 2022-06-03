@@ -5,6 +5,7 @@ library(tidyr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(ggtext)
 library(scales)
 library(cowplot)
 library(forecast)
@@ -52,14 +53,17 @@ p2 = staph_isolates %>%
   geom_line(aes(date, prop, colour = SpeciesName), size = 0.8) +
   theme_bw() +
   labs(y = "Proportion of MSSA and MRSA isolates", x = "Time (months)", colour = "") +
-  theme(axis.text = element_text(size=12),
-        axis.title = element_text(size=12),
-        legend.text = element_text(size=12),
-        legend.title = element_text(size=12)) +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
                date_breaks = "2 years", date_labels = "%Y") +
   geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        legend.text = element_markdown(size=12))
 
 p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
@@ -103,12 +107,14 @@ admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
 
 admissions = right_join(admissions, data, "project_id")
 
-admissions %>%
+table(data$ethnicity_name)
+
+p1 = admissions %>%
   mutate(start_datetime = floor_date(start_datetime, "month")) %>%
   filter(start_datetime > as.Date("2000-01-01")) %>%
   filter(start_datetime < as.Date("2021-12-01")) %>%
   filter(ethnicity_name != "" & ethnicity_name != "Prefer Not To Say") %>%
-  mutate(ethnicity_name = replace(ethnicity_name, ethnicity_name != "White British", "Other")) %>%
+  mutate(ethnicity_name = replace(ethnicity_name, ethnicity_name != "White British", "Other Groups")) %>%
   group_by(start_datetime) %>%
   count(ethnicity_name) %>%
   mutate(n = n/sum(n)) %>%
@@ -121,7 +127,31 @@ admissions %>%
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         legend.text = element_text(size = 12),
-        legend.title = element_text(size = 12))
+        legend.title = element_text(size = 12)) +
+  geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1)
+
+p2 = staph_isolates %>%
+  mutate(date = floor_date(date, "month")) %>%
+  # group_by(project_id, date, SpeciesName) %>%
+  # summarise(n = 1) %>%
+  # ungroup() %>%
+  group_by(date, SpeciesName) %>%
+  summarise(n = n()) %>%
+  mutate(prop = n/sum(n)) %>%
+  filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
+  ggplot() +
+  geom_line(aes(date, prop), size = 0.8, colour = mrsa_col) +
+  theme_bw() +
+  labs(y = "Proportion of MRSA isolates", x = "Time (months)", colour = "") +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=12)) +
+  scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
+               date_breaks = "2 years", date_labels = "%Y") +
+  geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1)
+
+plot_grid(p2, p1, ncol = 1, labels = c("a)", "b)"), hjust = 0)
 
 ggsave(here::here("Figures", "suppfig1.png"))
 
@@ -140,9 +170,44 @@ cat(staph_isolates %>%
 19777 - 1077
 3506 - 1077
 
-(19780+3519-22206)/22206
+(19777+3506-22206)/22206
 (19777 - 1077)/22206
 (3506 - 1077)/22206
+
+staph_isolates %>%
+  count(project_id) %>%
+  filter(n > 1) %>%
+  select(n) %>% pull %>% sum
+
+staph_isolates %>%
+  count(project_id) %>%
+  filter(n > 1) %>%
+  nrow()/22206*100
+
+staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
+  count(project_id) %>%
+  filter(n > 1) %>%
+  select(n) %>% pull %>% sum
+
+staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
+  count(project_id) %>%
+  filter(n > 1) %>%
+  nrow()
+
+staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  count(project_id) %>%
+  filter(n > 1) %>%
+  select(n) %>% pull %>% sum
+
+staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  count(project_id) %>%
+  filter(n > 1) %>%
+  nrow()
+
 
 table(staph_isolates$SpeciesName)
 

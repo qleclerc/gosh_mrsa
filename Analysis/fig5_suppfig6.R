@@ -4,6 +4,7 @@ library(tidyr)
 library(lubridate)
 library(reshape2)
 library(ggplot2)
+library(ggtext)
 library(scales)
 library(cowplot)
 
@@ -68,13 +69,17 @@ p1 = ggplot(all_isolates %>%
   scale_y_continuous(limits = c(0,1)) +
   facet_wrap(~variable, nrow = 1) +
   theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12)) +
   labs(x = "Time (months)", y = "Proportion of isolates tested", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size = 12),
+        legend.text = element_markdown(size=12))
 
 p2 = ggplot(all_isolates %>% 
               filter(variable %in% c("Fosfomycin", "Cotrimoxazole")) %>%
@@ -204,7 +209,16 @@ sp1 = ggplot(all_isolates) +
   theme_bw() +
   labs(x = "Time (months)", y = "Proportion of isolates tested", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col)) +
-  theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1))
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size = 8),
+        legend.text = element_markdown(size=12),
+        legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
 ggsave(here::here("Figures", "suppfig6.png"), sp1, height = 12, width = 12)

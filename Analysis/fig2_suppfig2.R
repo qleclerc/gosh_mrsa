@@ -3,6 +3,7 @@ library(dplyr)
 library(lubridate)
 library(reshape2)
 library(ggplot2)
+library(ggtext)
 library(Hmisc)
 library(corrplot)
 library(cowplot)
@@ -99,13 +100,17 @@ p2 = staph_isolates %>%
   geom_errorbar(aes(x = date, ymin = q25_test, ymax = q75_test, colour = SpeciesName),
                 alpha = 0.5, size = 1) +
   theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.text = element_text(size = 12),
-        legend.position = "bottom") +
   labs(x = "Time (years)", y = "Number of susceptibility tests\nconducted per isolate", colour = "") +
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        legend.text = element_markdown(size=12),
+        legend.position = "bottom")
 
 #significant correlation, but r^2 = 0.572 suggesting not all var in n res explained by n tests 
 summary(lm(data = staph_isolates %>%
@@ -176,13 +181,17 @@ sp1 = staph_isolates %>%
   theme_bw() +
   labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances detected",
        colour = "") +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12),
-        legend.text = element_text(size = 12),
-        legend.position = "bottom") +
   scale_x_continuous(breaks = seq(0,30,5)) +
   coord_cartesian(ylim = c(0,20), xlim = c(0,30)) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+  theme(axis.text = element_text(size=12),
+        axis.title = element_text(size=12),
+        legend.text = element_markdown(size=12),
+        legend.position = "bottom")
 
 sp2 = staph_isolates %>%
   filter(date > as.Date("2010-12-31")) %>%

@@ -4,6 +4,7 @@ library(dplyr)
 library(tidyr)
 library(reshape2)
 library(ggplot2)
+library(ggtext)
 library(scales)
 library(cowplot)
 
@@ -111,8 +112,12 @@ pa = staph_resistances %>%
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12),
-        legend.text = element_text(size = 12)) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
+        legend.text = element_markdown(size = 12)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*"))
 
 pb = staph_resistances %>%
   filter(value == "R") %>%
@@ -183,8 +188,17 @@ sp1 = staph_resistances %>%
   scale_y_continuous(limits = c(0,1)) +
   labs(x = "Time (months)", y = "Proportion of isolates resistant to antibiotic", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01"))) +
-  scale_colour_manual(values = c(mrsa_col, mssa_col)) +
-  theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        strip.text = element_text(size = 8),
+        legend.text = element_markdown(size = 12)) +
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
+                                 "Methicillin-Susceptible *Staphylococcus aureus*"))
 
 ggsave(here::here("Figures", "suppfig5.png"), sp1, height = 12, width = 12)
 
@@ -207,7 +221,7 @@ cor_res = mrsa_resistances %>%
   dcast(., date~variable, value.var = "prop", fill = 0) %>%
   select(-"date")
 
-cor_res = rcorr(as.matrix(cor_res))
+cor_res = rcorr(as.matrix(cor_res), type = "spearman")
 cor_res$P[is.na(cor_res$P)] = 0.04
 cor_res$P[which(cor_res$P < 0.05)] = 1
 cor_res$P[which(cor_res$P != 1)] = 0
@@ -233,7 +247,7 @@ cor_res = mssa_resistances %>%
   dcast(., date~variable, value.var = "prop", fill = 0) %>%
   select(-"date")
 
-cor_res = rcorr(as.matrix(cor_res))
+cor_res = rcorr(as.matrix(cor_res), type = "spearman")
 cor_res$P[is.na(cor_res$P)] = 0.04
 cor_res$P[which(cor_res$P < 0.05)] = 1
 cor_res$P[which(cor_res$P != 1)] = 0

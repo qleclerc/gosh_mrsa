@@ -17,7 +17,7 @@ good_ids = staph_isolates %>%
   pull
 
 staph_isolates_profiles = staph_isolates %>%
-  filter(project_id %in% good_ids)
+  filter(project_id %in% good_ids) 
 
 interesting_samples = c()
 
