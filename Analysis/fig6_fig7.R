@@ -42,6 +42,9 @@ mrsa_mssa_diversity %>%
 
 #patients with different isolates detected
 res_profiles_diversity %>%
+  filter(same_date == T) %>%
+  select(project_id) %>% pull %>% unique %>% length
+res_profiles_diversity %>%
   filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
   select(project_id) %>% pull %>% unique %>% length
 res_profiles_diversity %>%
@@ -438,6 +441,13 @@ res_profiles_changes = res_profiles_diversity %>%
   filter(delay > 2)
 
 length(unique(res_profiles_changes$project_id))
+
+res_profiles_changes %>%
+  filter(possible_nos == 0) %>%
+  filter(antibiotic_use == F) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
 
 res_profiles_changes %>%
   filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
