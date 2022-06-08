@@ -1,3 +1,8 @@
+
+#note: this script cleans the raw GOSH data
+#this data is the property of GOSH and is not available on this GitHub repository
+
+
 library(dplyr)
 library(lubridate)
 
@@ -23,7 +28,9 @@ staph_isolates$SpeciesName[staph_isolates$Cefoxitin == "R"] = "Methicillin-Resis
 staph_isolates$SpeciesName[staph_isolates$Cefoxitin == "I"] = "Methicillin-Resistant Staphylococcus aureus"
 staph_isolates$SpeciesName[staph_isolates$SpeciesName != "Methicillin-Resistant Staphylococcus aureus"] = "Methicillin-Susceptible Staphylococcus aureus"
 
+#remove columns with only NA values
 good_cols = colnames(staph_isolates)[apply(staph_isolates, 2, function(x) !(all(is.na(x))))]
+#remove MIC columns
 good_cols = good_cols[!grepl("MIC", good_cols)]
 
 staph_isolates = staph_isolates %>%
@@ -34,7 +41,7 @@ staph_isolates = staph_isolates %>%
   filter(date >= "2000-02-01")
 
 #remove anything that's not S or R
-#nb this is extremely rare, so acceptable
+#(nb this is extremely rare, so acceptable)
 tt = staph_isolates[,6:59]
 tt[is.na(tt)] = "NA"
 tt[tt != "S" & tt != "R"] = NA

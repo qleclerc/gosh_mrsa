@@ -46,8 +46,7 @@ profile_changes = data.frame(project_id = "test_id",
 for(i in 1:(nrow(changing_profiles)-1)){
   
   if(changing_profiles$project_id[i] != changing_profiles$project_id[i+1]) next
-  # if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
-  
+
   #rechecking as sometimes multiple samples with same lab id, but no change
   #eg sample 1 mssa, sample 2 mssa and mrsa, don't want to record mssa -> mssa change
   if(changing_profiles$SpeciesName[i] != changing_profiles$SpeciesName[i+1]){
@@ -67,7 +66,8 @@ profile_changes = profile_changes[-1,]
 
 #this new dataset should contain all the s aureus changes between samples
 
-#need to look whether events are during a single hospitalisation event, or if patients were discharged in the meantime
+#need to look whether events are during a single hospitalisation event, or if 
+# patients were discharged in the meantime
 #if discharged in the meantime, reinfection by someone else would be an explanation
 admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
   mutate(start_datetime = as_date(start_datetime)) %>%
@@ -108,7 +108,6 @@ profile_changes = profile_changes %>%
   mutate(same_source = (first_source == second_source))
 
 #add column to check if could be nosocomial
-#decided if there is a matching resistance profile in any patient within 30 days before the change is detected
 profile_changes$possible_nos = 0
 profile_changes$possible_nos_ward = ""
 
@@ -153,7 +152,7 @@ for(i in 1:(nrow(profile_changes))){
   
 }
 
-#add column to check if there was antibiotic usage
+#add column to check if there was any antibiotic usage
 antibio_data = read.csv(here::here("Clean", "antibio_data.csv")) %>%
   mutate(date = as_date(start_datetime))
 

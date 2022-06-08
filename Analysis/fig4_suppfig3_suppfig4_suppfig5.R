@@ -28,33 +28,7 @@ mrsa_resistances = staph_isolates %>%
   mutate(prop = n/sum(n)) %>%
   mutate(variable = as.character(variable)) %>%
   mutate(SpeciesName = "Methicillin-Resistant Staphylococcus aureus")
-# 
-# 
-# resistances = unique(mrsa_resistances$variable)
-# 
-# for(i in c(1,9,17,25,33,41)){
-#   
-#   pp = mrsa_resistances %>%
-#     filter(value == "R") %>%
-#     filter(variable %in% resistances[(i):(i+7)]) %>%
-#     ggplot() +
-#     geom_line(aes(date, prop, colour = variable)) +
-#     theme_bw() +
-#     scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
-#   
-#   plot(pp)
-#   
-# }
-# 
-# mrsa_resistances %>%
-#   filter(value == "R") %>%
-#   filter(variable == "Gent.Cipro") %>%
-#   ggplot() +
-#   geom_line(aes(date, prop, colour = variable)) +
-#   theme_bw() +
-#   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
-# 
-# 
+
 # #mssa
 mssa_resistances = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
@@ -69,35 +43,11 @@ mssa_resistances = staph_isolates %>%
   mutate(prop = n/sum(n)) %>%
   mutate(variable = as.character(variable)) %>%
   mutate(SpeciesName = "Methicillin-Susceptible Staphylococcus aureus")
-# 
-# 
-# resistances = unique(mssa_resistances$variable)
-# 
-# for(i in c(1,9,17,25,33,41)){
-#   
-#   pp = mssa_resistances %>%
-#     filter(value == "R") %>%
-#     filter(variable %in% resistances[(i):(i+7)]) %>%
-#     ggplot() +
-#     geom_line(aes(date, prop, colour = variable)) +
-#     theme_bw() +
-#     scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
-#   
-#   plot(pp)
-#   
-# }
-# 
-# mssa_resistances %>%
-#   filter(value == "R") %>%
-#   filter(variable == "Gent.Cipro") %>%
-#   ggplot() +
-#   geom_line(aes(date, prop, colour = variable)) +
-#   theme_bw() +
-#   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")))
 
 staph_resistances = rbind(mrsa_resistances, mssa_resistances) %>%
   tibble() %>%
   complete(date, variable, value, SpeciesName)
+
 
 pa = staph_resistances %>%
   filter(value == "R") %>%
@@ -178,6 +128,8 @@ plot_grid(plot_grid(pa + theme(legend.position = "none"),
           nrow = 2, rel_heights = c(1,0.1))
 
 ggsave(here::here("Figures", "fig4.png"), height = 10, width = 14)
+
+
 
 sp1 = staph_resistances %>%
   filter(value == "R") %>%

@@ -9,7 +9,8 @@ library(reshape2)
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
-#replace S by 1, R by 2. This way, a mean value of 2 between two samples for a given abx implies a change in resistance
+#replace S by 1, R by 2. This way, a mean value of 2 between two samples for a
+#  given abx implies a change in resistance
 #that approach allows me to ignore NA values in the comparison
 staph_isolates_sr = staph_isolates[,-c(1:5)]
 staph_isolates_sr[staph_isolates_sr == "S"] = 1
@@ -47,8 +48,7 @@ staph_isolates_profiles_mrsa = staph_isolates_profiles %>%
 for(i in 1:(nrow(staph_isolates_profiles_mrsa)-1)){
   
   if(staph_isolates_profiles_mrsa$project_id[i] != staph_isolates_profiles_mrsa$project_id[i+1]) next
-  # if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
-  
+
   #extract the two profiles compared
   tt = staph_isolates_profiles_mrsa[c(i:(i+1)),-c(1:5)]
   #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
@@ -71,8 +71,7 @@ staph_isolates_profiles_mssa = staph_isolates_profiles %>%
 for(i in 1:(nrow(staph_isolates_profiles_mssa)-1)){
   
   if(staph_isolates_profiles_mssa$project_id[i] != staph_isolates_profiles_mssa$project_id[i+1]) next
-  # if(staph_isolates_profiles$SpecimenType[i] != staph_isolates_profiles$SpecimenType[i+1]) next
-  
+
   #extract the two profiles compared
   tt = staph_isolates_profiles_mssa[c(i:(i+1)),-c(1:5)]
   #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
@@ -85,9 +84,10 @@ for(i in 1:(nrow(staph_isolates_profiles_mssa)-1)){
 }
 
 
-#this is a list of samples, where: samples are from the same patient, the same source (eg nose), the same species (mrsa or mssa),
-# but show a different resistant profile. No limits on dates currently, just have to be subsequent in the data (ie sample is different from
-# the one immediately before it chronologically)
+#this is a list of samples, where: samples are from the same patient, the same 
+# species (mrsa or mssa), but show a different resistant profile. No limits on 
+# dates currently, just have to be subsequent in the data (ie sample is different 
+# from the one immediately before it chronologically)
 changing_profiles_mrsa = staph_isolates_profiles %>%
   filter(CultureIsoID %in% interesting_samples_mrsa)
 
@@ -109,8 +109,7 @@ profile_changes = data.frame(project_id = "test_id",
 for(i in 1:(nrow(changing_profiles_mrsa)-1)){
   
   if(changing_profiles_mrsa$project_id[i] != changing_profiles_mrsa$project_id[i+1]) next
-  # if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
-  
+
   #extract the two profiles compared
   tt = changing_profiles_mrsa[c(i:(i+1)),-c(1:5)]
   #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
@@ -143,8 +142,7 @@ for(i in 1:(nrow(changing_profiles_mrsa)-1)){
 for(i in 1:(nrow(changing_profiles_mssa)-1)){
   
   if(changing_profiles_mssa$project_id[i] != changing_profiles_mssa$project_id[i+1]) next
-  # if(changing_profiles$SpecimenType[i] != changing_profiles$SpecimenType[i+1]) next
-  
+
   #extract the two profiles compared
   tt = changing_profiles_mssa[c(i:(i+1)),-c(1:5)]
   #work out the means (neat trick: if comparing a value with NA, the mean will stay the same as the non-NA value... so, not either 1 or 3, so won't be flagged)
@@ -179,39 +177,8 @@ profile_changes = profile_changes[-1,]
 
 #this new dataset should contain all the resistance changes between isolates
 
-equivalence_table = read.csv(here::here("Clean", "equivalence_table.csv"))[,-1]
-colnames(equivalence_table)[1] = "antibiotic"
-equivalence_table$antibiotic[equivalence_table$antibiotic == "Fusidic_acid"] = "Fucidin"
-equivalence_table$antibiotic[equivalence_table$antibiotic == "Co-Trimoxazole"] = "Cotrimoxazole"
-
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Gent.Cipro", "class" = "Aminoglycoside"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Amik.Fluclox", "class" = "Aminoglycoside"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Piperacillin...Tazobactam", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Pip.Taz.Cipro", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Penicillin", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Neomycin", "class" = "Aminoglycoside"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Cephradine", "class" = "Cephalosporin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Syncercid", "class" = "Streptogramin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Augmentin", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Naladixic.Acid", "class" = "Fluoroquinolone"))
-
-#add class of change
-profile_changes = profile_changes %>%
-  left_join(equivalence_table, "antibiotic") %>%
-  filter(!is.na(project_id)) %>% 
-  distinct()
-
-#need to look whether events are during a single hospitalisation event, or if patients were discharged in the meantime
+#need to look whether events are during a single hospitalisation event, or if 
+# patients were discharged in the meantime
 #if discharged in the meantime, reinfection by someone else would be an explanation
 admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
   mutate(start_datetime = as_date(start_datetime)) %>%
@@ -232,7 +199,8 @@ for(i in 1:nrow(profile_changes)){
   
   for(j in 1:nrow(admissions_i)){
     
-    if(profile_changes$first_date[i] >= admissions_i$start_datetime[j] && profile_changes$second_date[i] <= admissions_i$end_datetime[j]) profile_changes$same_hosp[i] = T
+    if(profile_changes$first_date[i] >= admissions_i$start_datetime[j] &&
+       profile_changes$second_date[i] <= admissions_i$end_datetime[j]) profile_changes$same_hosp[i] = T
     
   }
   
@@ -243,14 +211,11 @@ for(i in 1:nrow(profile_changes)){
 profile_changes = profile_changes %>%
   mutate(same_date = (first_date == second_date))
 
+#add column to say if varying profiles come from the same sample source
 profile_changes = profile_changes %>%
   mutate(same_source = (first_source == second_source))
 
 #add column to check if could be nosocomial
-#decided if there is a matching resistance profile in any patient within 1 week before the change is detected
-
-#check if patient was in ward with anyone else with s aureus (null hypothesis)
-
 staph_isolates_profiles[is.na(staph_isolates_profiles)] = 0
 profile_changes$possible_nos = 0
 for(i in 1:(nrow(profile_changes))){
@@ -299,6 +264,38 @@ for(i in 1:(nrow(profile_changes))){
   
 }
 
+
+#add class of change
+equivalence_table = read.csv(here::here("Clean", "equivalence_table.csv"))[,-1]
+colnames(equivalence_table)[1] = "antibiotic"
+equivalence_table$antibiotic[equivalence_table$antibiotic == "Fusidic_acid"] = "Fucidin"
+equivalence_table$antibiotic[equivalence_table$antibiotic == "Co-Trimoxazole"] = "Cotrimoxazole"
+
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Gent.Cipro", "class" = "Aminoglycoside"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Amik.Fluclox", "class" = "Aminoglycoside"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Piperacillin...Tazobactam", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Pip.Taz.Cipro", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Penicillin", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Neomycin", "class" = "Aminoglycoside"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Cephradine", "class" = "Cephalosporin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Syncercid", "class" = "Streptogramin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Augmentin", "class" = "Penicillin"))
+equivalence_table = rbind(equivalence_table,
+                          c("antibiotic" = "Naladixic.Acid", "class" = "Fluoroquinolone"))
+
+profile_changes = profile_changes %>%
+  left_join(equivalence_table, "antibiotic") %>%
+  filter(!is.na(project_id)) %>% 
+  distinct()
 
 #add column to check if there was antibiotic usage
 antibio_data = read.csv(here::here("Clean", "antibio_data.csv")) %>%

@@ -14,9 +14,6 @@ mssa_col = "#0073C2FF"
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv"), stringsAsFactors = F) %>%
   mutate(date = as_date(date))
 
-#the line to remove all isolates with NAs only (ie nothing tested at all)
-#staph_isolates = staph_isolates[!apply(staph_isolates[,6:59], 1, function(x) all(is.na(x))),]
-
 mrsa_isolates_m = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
   select(-c(1:4)) %>%

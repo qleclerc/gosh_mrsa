@@ -333,6 +333,7 @@ table(mrsa_changes$delay <= 2)
 mrsa_changes = mrsa_changes %>%
   filter(delay > 2)
 
+
 nrow(mrsa_changes)
 length(unique(mrsa_changes$project_id))
 
@@ -342,9 +343,9 @@ table(mrsa_changes$delay)
 mrsa_changes %>% filter(any_antibiotic == T) %>% nrow()
 mrsa_changes %>% filter(any_antibiotic == T) %>% select(project_id) %>% pull %>% unique %>% length
 
-
 median(mrsa_changes$los)
 quantile(mrsa_changes$los)
+
 admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
   mutate(start_datetime = as_date(start_datetime)) %>%
   mutate(end_datetime = as_date(end_datetime)) %>%
@@ -357,6 +358,7 @@ admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
 median(admissions$delay)
 quantile(admissions$delay)
 
+
 pa = ggplot(mrsa_changes) +
   geom_histogram(aes(delay, y = 7*..density..), binwidth = 7, colour = "white") +
   geom_vline(xintercept = median(mrsa_changes$delay), linetype = "dashed", size = 1) +
@@ -367,16 +369,6 @@ pa = ggplot(mrsa_changes) +
   labs(x = "Delay between MSSA and MRSA isolates (days)", y = "Proportion") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))
-# 
-# ggplot(mrsa_changes) +
-#   geom_histogram(aes(los, y = 7*..density..), binwidth = 7, colour = "white") +
-#   scale_y_continuous(breaks = seq(0,0.1,0.02), limits = c(0,0.1)) +
-#   scale_x_continuous(breaks = seq(0,120,20)) + 
-#   coord_cartesian(xlim = c(0,130)) +
-#   theme_bw() +
-#   labs(x = "Length of stay in hospital (days)", y = "Proportion") +
-#   theme(axis.text = element_text(size = 12),
-#         axis.title = element_text(size = 12))
 
 #changes from mssa to mrsa, potential nosocomial
 mrsa_changes = mrsa_changes %>%
@@ -396,6 +388,7 @@ pc = mrsa_changes %>%
         axis.title = element_text(size = 12)) +
   labs(x = "Time (years)",
        y = "Number of potential\nnosocomial-acquired MRSA")
+
 
 #changes from mssa to mrsa, mysterious events
 mrsa_changes_mys = mrsa_mssa_diversity %>%

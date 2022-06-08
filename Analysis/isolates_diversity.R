@@ -10,7 +10,8 @@ library(dplyr)
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
   mutate(date = as_date(date))
 
-#replace S by 1, R by 2. This way, a mean value of 2 between two samples for a given abx implies a change in resistance
+#replace S by 1, R by 2. This way, a mean value of 2 between two samples for a
+#  given abx implies a change in resistance
 #that approach allows me to ignore NA values in the comparison
 staph_isolates_sr = staph_isolates[,-c(1:5)]
 staph_isolates_sr[staph_isolates_sr == "S"] = 1

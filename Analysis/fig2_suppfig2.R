@@ -21,10 +21,6 @@ staph_isolates$n_test = apply(staph_isolates[,-c(1:5, 57)], 1, function(x) sum(!
 
 staph_isolates = staph_isolates[,c(1:5, 57, 58)]
 
-#significant correlation, but r^2 = 0.572 suggesting not all var in n res explained by n tests 
-summary(lm(data = staph_isolates,
-           n_res ~ n_test + SpeciesName))
-
 #link between number of tests and resistances
 p1 = staph_isolates %>%
   ggplot() +
@@ -46,44 +42,6 @@ p1 = staph_isolates %>%
   scale_x_continuous(breaks = seq(0,30,5)) +
   coord_cartesian(ylim = c(0,20), xlim = c(0,30)) +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
-
-
-#how many isolates with no reported resistance?
-sum(staph_isolates$n_test == 0)
-(staph_isolates %>%
-    select(project_id) %>%
-    pull %>%
-    unique %>%
-    length) - 
-  (staph_isolates %>%
-     filter(n_test != 0) %>%
-     select(project_id) %>%
-     pull %>%
-     unique %>%
-     length)
-sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
-sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
-
-nosusnose = staph_isolates %>% filter(n_test == 0) %>% select(SpecimenType) %>% pull
-nosusnose = length((grep("ose|hroat|asal", nosusnose, value = T)))
-nosusnonose = 10029-nosusnose
-nosusnose/(nosusnonose+nosusnose)
-
-susnose = staph_isolates %>% filter(n_test > 0) %>% select(SpecimenType) %>% pull
-susnose = length((grep("ose|hroat|asal", susnose, value = T)))
-susnonose = 62178 - susnose
-susnose/(susnonose+susnose)
-
-#isolates with/without sus test data x isolates from nose,throat,skin/not
-chisq.test(matrix(c(susnose,nosusnose,
-                    susnonose,nosusnonose),
-                  byrow = T, nrow = 2))
-
-
-#how many isolates with n reported resistance == n tested resistance
-sum(staph_isolates$n_test == staph_isolates$n_res)
-sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"])
-sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"])
 
 p2 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
@@ -112,18 +70,6 @@ p2 = staph_isolates %>%
         legend.text = element_markdown(size=12),
         legend.position = "bottom")
 
-#significant correlation, but r^2 = 0.572 suggesting not all var in n res explained by n tests 
-summary(lm(data = staph_isolates %>%
-             mutate(date = floor_date(date, "year")) %>%
-             filter(date < as.Date("2011-01-01")),
-           n_test ~ date + SpeciesName))
-
-summary(lm(data = staph_isolates %>%
-             mutate(date = floor_date(date, "year")) %>%
-             filter(date >= as.Date("2011-01-01")),
-           n_test ~ date + SpeciesName))
-
-
 p3 = staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
   group_by(date, SpeciesName) %>%
@@ -146,11 +92,6 @@ p3 = staph_isolates %>%
   labs(x = "Time (years)", y = "Number of antibiotic resistances\ndetected per isolate") +
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
-
-summary(lm(data = staph_isolates %>%
-             mutate(date = floor_date(date, "year")) %>%
-             filter(date >= as.Date("2011-01-01")),
-           n_res ~ date + SpeciesName))
 
 pall = plot_grid(p1 + theme(legend.position = "none"),
                  NULL,
@@ -214,3 +155,65 @@ plot_grid(plot_grid(sp1+theme(legend.position = "none"), sp2+theme(legend.positi
           get_legend(sp1), nrow = 2, rel_heights = c(1,0.1))
 
 ggsave(here::here("Figures", "suppfig2.png"), height = 5, width = 10, dpi = 300)
+
+
+
+
+#descriptive stats
+
+#how many isolates with no reportedresistance?
+sum(staph_isolates$n_test == 0)
+#how many patients?
+(staph_isolates %>%
+    select(project_id) %>%
+    pull %>%
+    unique %>%
+    length) - 
+  (staph_isolates %>%
+     filter(n_test != 0) %>%
+     select(project_id) %>%
+     pull %>%
+     unique %>%
+     length)
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == 0)
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == 0)
+
+nosusnose = staph_isolates %>% filter(n_test == 0) %>% select(SpecimenType) %>% pull
+nosusnose = length((grep("ose|hroat|asal", nosusnose, value = T)))
+nosusnonose = 10029-nosusnose
+nosusnose/(nosusnonose+nosusnose)
+
+susnose = staph_isolates %>% filter(n_test > 0) %>% select(SpecimenType) %>% pull
+susnose = length((grep("ose|hroat|asal", susnose, value = T)))
+susnonose = 62178 - susnose
+susnose/(susnonose+susnose)
+
+#isolates with/without sus test data x isolates from nose,throat,skin/not
+chisq.test(matrix(c(susnose,nosusnose,
+                    susnonose,nosusnonose),
+                  byrow = T, nrow = 2))
+
+
+#how many isolates with n reported resistance == n tested resistance
+sum(staph_isolates$n_test == staph_isolates$n_res)
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Resistant Staphylococcus aureus"])
+sum(staph_isolates$n_test[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"] == staph_isolates$n_res[staph_isolates$SpeciesName == "Methicillin-Susceptible Staphylococcus aureus"])
+
+
+#linear regression
+summary(lm(data = staph_isolates,
+           n_res ~ n_test + SpeciesName))
+
+summary(lm(data = staph_isolates %>%
+             mutate(date = floor_date(date, "year")) %>%
+             filter(date < as.Date("2011-01-01")),
+           n_test ~ date + SpeciesName))
+summary(lm(data = staph_isolates %>%
+             mutate(date = floor_date(date, "year")) %>%
+             filter(date >= as.Date("2011-01-01")),
+           n_test ~ date + SpeciesName))
+
+summary(lm(data = staph_isolates %>%
+             mutate(date = floor_date(date, "year")) %>%
+             filter(date >= as.Date("2011-01-01")),
+           n_res ~ date + SpeciesName))
