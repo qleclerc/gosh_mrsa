@@ -59,7 +59,20 @@ p2 = staph_isolates %>%
         axis.title = element_text(size=12),
         legend.text = element_markdown(size=12))
 
-p3 = staph_isolates %>%
+plot_grid(plot_grid(p1 + theme(legend.position = "none"),
+                    NULL,
+                    p2 + theme(legend.position = "none"),
+                    nrow = 3, labels = c("a)", "", "b)"), label_size = 12,
+                    rel_heights = c(0.7, 0.05, 1), vjust = c(1,0)),
+          get_legend(p2 + theme(legend.position = "bottom")),
+          nrow = 2, rel_heights = c(1,0.05))
+
+ggsave(here::here("Figures", "fig1.png"), heigh = 8, width = 10)
+
+
+# isolates per patient
+
+staph_isolates %>%
   mutate(date = floor_date(date, "year")) %>%
   group_by(date, SpeciesName, project_id) %>%
   summarise(n = n()) %>%
@@ -76,18 +89,7 @@ p3 = staph_isolates %>%
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
-plot_grid(plot_grid(p1 + theme(legend.position = "none"),
-                    NULL,
-                    p2 + theme(legend.position = "none"),
-                    NULL,
-                    p3 + theme(legend.position = "none"),
-                    nrow = 5, labels = c("a)", "", "b)", "", "c)"), label_size = 12,
-                    rel_heights = c(0.7, 0.05, 1, 0.05, 0.5), vjust = c(1,0,0)),
-          get_legend(p2 + theme(legend.position = "bottom")),
-          nrow = 2, rel_heights = c(1,0.05))
-
-ggsave(here::here("Figures", "fig1.png"), heigh = 14, width = 10)
-
+ggsave(here::here("Figures", "suppfig1.png"))
 
 
 # ethnicity
@@ -115,6 +117,9 @@ p1 = admissions %>%
   mutate(n = n/sum(n)) %>%
   ggplot() +
   geom_line(aes(start_datetime, n, colour = ethnicity_name), size = 0.8) +
+  geom_smooth(data = . %>%
+                filter(start_datetime > "2014-01-01" & start_datetime < "2020-03-26"),
+              aes(start_datetime, n, colour = ethnicity_name), method = "lm") +
   theme_bw() +
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   labs(x = "Time (months)", y = "Proportion of patients", colour = "Ethnicity:") +
@@ -123,7 +128,8 @@ p1 = admissions %>%
         axis.title = element_text(size = 12),
         legend.text = element_text(size = 12),
         legend.title = element_text(size = 12)) +
-  geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1)
+  geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1) +
+  geom_vline(xintercept = as.Date("2014-01-01"), linetype = 3, colour = "black", size = 1)
 
 p2 = staph_isolates %>%
   mutate(date = floor_date(date, "month")) %>%
@@ -133,6 +139,9 @@ p2 = staph_isolates %>%
   filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
   ggplot() +
   geom_line(aes(date, prop), size = 0.8, colour = mrsa_col) +
+  geom_smooth(data = . %>%
+                filter(date > "2014-01-01" & date < "2020-03-26"),
+              aes(date, prop), method = "lm", colour = mrsa_col) +
   theme_bw() +
   labs(y = "Proportion of MRSA isolates", x = "Time (months)", colour = "") +
   theme(axis.text = element_text(size=12),
@@ -141,11 +150,13 @@ p2 = staph_isolates %>%
         legend.title = element_text(size=12)) +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
                date_breaks = "2 years", date_labels = "%Y") +
-  geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1)
+  geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1) +
+  geom_vline(xintercept = as.Date("2014-01-01"), linetype = 3, colour = "black", size = 1)
+
 
 plot_grid(p2, p1, ncol = 1, labels = c("a)", "b)"), hjust = 0)
 
-ggsave(here::here("Figures", "suppfig1.png"))
+ggsave(here::here("Figures", "suppfig2.png"))
 
 
 

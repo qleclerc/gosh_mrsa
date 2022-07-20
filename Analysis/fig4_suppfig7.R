@@ -153,7 +153,7 @@ plot_grid(plot_grid(plot_grid(plot_grid(p1 + theme(legend.position = "none"),
           get_legend(p1+theme(legend.position = "bottom")),
           ncol = 1, rel_heights = c(1,0.05))
 
-ggsave(here::here("Figures","fig5.png"), height = 10, width = 14)
+ggsave(here::here("Figures","fig4.png"), height = 10, width = 14)
 
 
 
@@ -218,4 +218,4 @@ sp1 = ggplot(all_isolates) +
         legend.position = "bottom",
         axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
-ggsave(here::here("Figures", "suppfig6.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig7.png"), sp1, height = 12, width = 12)

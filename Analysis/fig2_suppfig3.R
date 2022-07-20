@@ -33,7 +33,7 @@ p1 = staph_isolates %>%
               aes(n_test, n_res), method = "lm", colour = "blue4") +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   theme_bw() +
-  labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances detected",
+  labs(x = "Number of susceptibility tests conducted", y = "Number of antibiotic resistances\ndetected",
        colour = "") +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
@@ -93,27 +93,8 @@ p3 = staph_isolates %>%
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
-pall = plot_grid(p1 + theme(legend.position = "none"),
-                 NULL,
-                 plot_grid(p2 + theme(legend.position = "none"),
-                           NULL,
-                           p3 + theme(legend.position = "none"),
-                           ncol = 3,
-                           labels = c("b)", "", "c)"),
-                           rel_widths = c(1,0.05,1),
-                           label_size = 12,
-                           hjust = 0),
-                 get_legend(p2),
-                 rel_heights = c(1.2,0.05,1.1,0.1),
-                 labels = c("a)"),
-                 nrow = 4,
-                 label_size = 12,
-                 hjust = 0)
 
-ggsave(here::here("Figures", "fig2.png"), pall, height = 9, width = 12, dpi = 300)
-
-
-
+#suppfig
 sp1 = staph_isolates %>%
   filter(date < as.Date("2010-12-31")) %>%
   ggplot() +
@@ -154,7 +135,7 @@ plot_grid(plot_grid(sp1+theme(legend.position = "none"), sp2+theme(legend.positi
                     nrow = 1, labels = c("a)", "b)"), hjust = 0),
           get_legend(sp1), nrow = 2, rel_heights = c(1,0.1))
 
-ggsave(here::here("Figures", "suppfig2.png"), height = 5, width = 10, dpi = 300)
+ggsave(here::here("Figures", "suppfig3.png"), height = 5, width = 10, dpi = 300)
 
 
 
@@ -217,3 +198,117 @@ summary(lm(data = staph_isolates %>%
              mutate(date = floor_date(date, "year")) %>%
              filter(date >= as.Date("2011-01-01")),
            n_res ~ date + SpeciesName))
+
+
+
+
+#top resistances for MSSA and MRSA
+#second part of fig2, compile and save
+staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
+  mutate(date = as_date(date))
+
+all_data = data.frame()
+
+d1 = staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  select(-c(1:5)) %>%
+  apply(., 2, function(x) round(sum(!is.na(x))/51020, 2)) %>%
+  sort(decreasing = T) %>%
+  .[1:15]
+
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MSSA",
+                            var = "test"))
+
+d1 = staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Susceptible Staphylococcus aureus") %>%
+  select(-c(1:5)) %>%
+  apply(., 2, function(x) round(sum(x == "R", na.rm = T)/51020, 2)) %>%
+  .[all_data %>% filter(spec == "MSSA" & var == "test") %>% select(abx) %>% pull]
+
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MSSA",
+                            var = "res"))
+
+d1 = staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
+  select(-c(1:5)) %>%
+  apply(., 2, function(x) round(sum(!is.na(x))/21187, 2)) %>%
+  sort(decreasing = T) %>%
+  .[1:15]
+
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MRSA",
+                            var = "test"))
+
+d1 = staph_isolates %>%
+  filter(SpeciesName == "Methicillin-Resistant Staphylococcus aureus") %>%
+  select(-c(1:5)) %>%
+  apply(., 2, function(x) round(sum(x == "R", na.rm = T)/21187, 2)) %>%
+  .[all_data %>% filter(spec == "MRSA" & var == "test") %>% select(abx) %>% pull]
+
+all_data = rbind(all_data,
+                 data.frame(abx = names(d1),
+                            val = d1,
+                            spec = "MRSA",
+                            var = "res"))
+
+
+p4 = ggplot() +
+  geom_col(data = all_data %>%
+             filter(spec == "MRSA" & var == "test") %>%
+             mutate(abx = factor(abx, levels = abx[rev(order(val))])),
+           aes(abx, val), fill = mrsa_col, alpha = 0.5) +
+  geom_col(data = all_data %>%
+             filter(spec == "MRSA" & var == "res"),
+           aes(abx, val), fill = mrsa_col) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12)) +
+  labs(x = "", y = "Proportion of MRSA\nisolates tested and resistant") +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2))
+
+p5 = ggplot() +
+  geom_col(data = all_data %>%
+             filter(spec == "MSSA" & var == "test") %>%
+             mutate(abx = factor(abx, levels = abx[rev(order(val))])),
+           aes(abx, val), fill = mssa_col, alpha = 0.5) +
+  geom_col(data = all_data %>%
+             filter(spec == "MSSA" & var == "res"),
+           aes(abx, val), fill = mssa_col) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+        axis.title = element_text(size = 12)) +
+  labs(x = "", y = "Proportion of MSSA\nisolates tested and resistant") +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2))
+
+
+pall = plot_grid(p1 + theme(legend.position = "none"),
+                 NULL,
+                 plot_grid(p2 + theme(legend.position = "none"),
+                           NULL,
+                           p3 + theme(legend.position = "none"),
+                           ncol = 3,
+                           labels = c("b)", "", "c)"),
+                           rel_widths = c(1,0.05,1),
+                           label_size = 12,
+                           hjust = 0),
+                 get_legend(p2),
+                 p4,
+                 p5,
+                 rel_heights = c(1.2,0.05,1.1,0.1,1.1,1.1),
+                 labels = c("a)", "", "", "", "d)", "e)"),
+                 nrow = 6,
+                 label_size = 12,
+                 hjust = 0)
+
+ggsave(here::here("Figures", "fig2.png"), pall, height = 14, width = 12, dpi = 300)
+

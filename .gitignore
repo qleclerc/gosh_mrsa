@@ -39,5 +39,6 @@ vignettes/*.pdf
 .Renviron
 
 # Data
+# also skipping antibio data as too big for github
 /Data
 /Clean/antibio_data.csv
