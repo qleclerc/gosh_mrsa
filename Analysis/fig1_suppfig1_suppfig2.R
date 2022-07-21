@@ -5,6 +5,7 @@ library(tidyr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(RColorBrewer)
 library(ggtext)
 library(scales)
 library(cowplot)
@@ -17,6 +18,9 @@ mssa_col = "#0073C2FF"
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>% 
   mutate(date = as_date(date))
 
+typing_data = read.csv(here::here("Clean", "typing_data.csv")) %>%
+  mutate(across(matches("datetime"), as_date))
+
 #some general plots
 #baseline incidence
 p1 = staph_isolates %>%
@@ -26,9 +30,10 @@ p1 = staph_isolates %>%
   ggplot() +
   geom_line(aes(date, n), size = 0.8) +
   theme_bw() +
-  labs(y = "Number of S. aureus isolates", x = "Time (months)") +
+  labs(y = "Number of<br>*S. aureus* isolates", x = "Time (months)") +
   theme(axis.text = element_text(size=12),
-        axis.title = element_text(size=12),
+        axis.title.y = element_markdown(size=12),
+        axis.title.x = element_text(size=12),
         legend.text = element_text(size=12),
         legend.title = element_text(size=12)) +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
@@ -46,7 +51,7 @@ p2 = staph_isolates %>%
   ggplot() +
   geom_line(aes(date, prop, colour = SpeciesName), size = 0.8) +
   theme_bw() +
-  labs(y = "Proportion of MSSA and MRSA isolates", x = "Time (months)", colour = "") +
+  labs(y = "Proportion of MSSA and\nMRSA isolates", x = "Time (months)", colour = "") +
   scale_x_date(limits = as.Date(c("2000-02-01", "2021-11-01")),
                date_breaks = "2 years", date_labels = "%Y") +
   geom_vline(xintercept = as.Date("2020-03-26"), linetype = 2, colour = "green4", size = 1) +
@@ -59,15 +64,49 @@ p2 = staph_isolates %>%
         axis.title = element_text(size=12),
         legend.text = element_markdown(size=12))
 
+#CCs
+p3 = typing_data %>%
+  mutate(CC = replace(CC, grepl("ST", CC), "Other")) %>%
+  filter(CC != "0") %>%
+  select(project_id, start_datetime, CC) %>%
+  distinct() %>%
+  mutate(start_datetime = floor_date(start_datetime, "year")) %>%
+  group_by(start_datetime, CC) %>%
+  summarise(n = n()) %>%
+  ggplot() +
+  geom_col(aes(start_datetime, n, fill = CC), position = "stack") +
+  theme_bw() +
+  labs(y = "Number of typed isolates", x = "Year") +
+  geom_text(data = . %>%
+              group_by(start_datetime) %>%
+              summarise(total = sum(n)),
+            aes(start_datetime, total, label = total), vjust = -0.5) +
+  scale_fill_brewer(palette = "Paired") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12)) +
+  scale_x_date(breaks = as.Date(c("2000-01-01", "2002-01-01", "2004-01-01",
+                                  "2006-01-01", "2008-01-01", "2010-01-01",
+                                  "2012-01-01", "2014-01-01", "2016-01-01",
+                                  "2018-01-01", "2020-01-01")), date_labels = "%Y",
+               limits = as.Date(c("1999-06-01", "2021-08-01"))) +
+  scale_y_continuous(limits = c(0, 250))
+
+
+
+
+
 plot_grid(plot_grid(p1 + theme(legend.position = "none"),
                     NULL,
                     p2 + theme(legend.position = "none"),
                     nrow = 3, labels = c("a)", "", "b)"), label_size = 12,
-                    rel_heights = c(0.7, 0.05, 1), vjust = c(1,0)),
+                    rel_heights = c(0.7, 0.05, 1), hjust = 0),
           get_legend(p2 + theme(legend.position = "bottom")),
-          nrow = 2, rel_heights = c(1,0.05))
+          p3,
+          nrow = 3, rel_heights = c(1,0.05,0.7), labels = c("", "", "c)"), hjust = 0)
 
-ggsave(here::here("Figures", "fig1.png"), heigh = 8, width = 10)
+ggsave(here::here("Figures", "fig1.png"), heigh = 10, width = 10)
 
 
 # isolates per patient
