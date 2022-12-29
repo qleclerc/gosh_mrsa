@@ -41,7 +41,8 @@ data = rbind(data2, data1) %>%
                          "Staph aureus type/toxin testing",
                          "Staph. aureus Type/Toxin - 1",
                          "Staph. aureus Type/Toxin - 2",
-                         "Staph. aureus Type/Toxin - 3")) %>%
+                         "Staph. aureus Type/Toxin - 3",
+                         "TYPE")) %>%
   filter(!(component_name %in% c("Date Final Report Received",
                                  "Date Interim Report Received",
                                  "Date final report received",
@@ -74,7 +75,8 @@ sort(table(data$component_basename), decreasing = T)
 data_cc = data %>%
   filter(component_basename %in% c("BRES2", "MLST", "MLST Clonal Complex",
                                    "MLST Profile", "MLST ST", "MLSTAP", "MLSTCC",
-                                   "STP3")) %>%
+                                   "STP3", "SPATYPE1","SPATYPE2","SPATYPE3",
+                                   "SPARS1","SPARS2","SPARS3")) %>%
   mutate(Value = gsub(" ", "", Value)) %>%
   mutate(Value = gsub("-", "", Value)) %>%
   mutate(Value = gsub("st", "", Value)) %>%
@@ -97,7 +99,21 @@ data_cc$Value[data_cc$Value == "2222632"] = "2,2,2,2,6,3,2"
 
 spatypes = openxlsx::read.xlsx(here::here("Clean", "spatypes.xlsx")) %>%
   mutate(mlst = gsub("ST-","",mlst)) %>%
-  mutate(mlst = gsub(",.*", "", mlst))
+  mutate(mlst = gsub(",.*", "", mlst)) %>%
+  mutate(rep = gsub("-", "", rep))
+  
+spatypes$mlst[spatypes$spa=="t304"] = 8
+spatypes$mlst[spatypes$spa=="t688"] = 5
+spatypes$mlst[spatypes$spa=="t267"] = 97
+spatypes$mlst[spatypes$spa=="t548"] = 5
+spatypes$mlst[spatypes$spa=="t657"] = 772
+spatypes$mlst[spatypes$spa=="t786"] = 88
+spatypes$mlst[spatypes$spa=="t852"] = 22
+spatypes$mlst[spatypes$spa=="t020"] = 22
+spatypes$mlst[spatypes$spa=="t437"] = 59
+spatypes$mlst[spatypes$spa=="t690"] = 88
+
+
 
 mlstdata = read.delim(here::here("Clean","bigsdb.txt"))
 
@@ -108,8 +124,12 @@ mlstdata = mlstdata %>%
   mutate(ST = as.character(ST)) %>%
   mutate(clonal_complex = gsub("CC", "", clonal_complex))
 
-data_cc$ST = 0
-data_cc$CC = 0
+mlstdata$clonal_complex[mlstdata$ST=="80"] = "80"
+mlstdata$clonal_complex[mlstdata$ST=="88"] = "88"
+mlstdata$clonal_complex[mlstdata$ST=="59"] = "59"
+
+data_cc$ST = "None"
+data_cc$CC = "None"
 
 for(i in 1:nrow(data_cc)){
   
@@ -120,8 +140,8 @@ for(i in 1:nrow(data_cc)){
     mlstdata_index = mlstdata %>%
       filter(ST == data_cc$Value[i])
     if(nrow(mlstdata_index) > 0){
-      data_cc$ST[i] = as.numeric(data_cc$Value[i])
-      data_cc$CC[i] = as.numeric(mlstdata_index$clonal_complex)
+      data_cc$ST[i] = as.character(data_cc$Value[i])
+      data_cc$CC[i] = as.character(mlstdata_index$clonal_complex)
     }
   }
   
@@ -131,13 +151,22 @@ for(i in 1:nrow(data_cc)){
     mlstdata_index = mlstdata %>%
       filter(Value == data_cc$Value[i])
     if(nrow(mlstdata_index) > 0){
-      data_cc$ST[i] = as.numeric(mlstdata_index$ST)
-      data_cc$CC[i] = as.numeric(mlstdata_index$clonal_complex)
+      data_cc$ST[i] = as.character(mlstdata_index$ST)
+      data_cc$CC[i] = as.character(mlstdata_index$clonal_complex)
     }
   }
   
+  #spa raw seq
+  if(data_cc$component_basename[i] %in% c("SPARS1", "SPARS2", "SPARS3")){
+    spatypes_index = spatypes %>%
+      filter(rep == data_cc$Value[i])
+    if(nrow(spatypes_index) > 0){
+      data_cc$Value[i] = spatypes_index$spa
+    }
+  }
   
   #spa types
+  #will catch those from loop above
   if(grepl("t[0-9]", data_cc$Value[i])){
     spatypes_index = spatypes %>%
       filter(spa == data_cc$Value[i])
@@ -148,10 +177,12 @@ for(i in 1:nrow(data_cc)){
         filter(ST == data_cc$ST[i])
       
       if(nrow(mlstdata_index) > 0){
-        data_cc$CC[i] = as.numeric(mlstdata_index$clonal_complex)
+        data_cc$CC[i] = as.character(mlstdata_index$clonal_complex)
+        data_cc$ST[i] = as.character(data_cc$ST[i])
       }
     }
   }
+  
   
   
   #random h000a things
@@ -162,35 +193,40 @@ for(i in 1:nrow(data_cc)){
     mlstdata_index = mlstdata %>%
       filter(ST == data_cc$Value[i])
     if(nrow(mlstdata_index) > 0){
-      data_cc$ST[i] = as.numeric(data_cc$Value[i])
-      data_cc$CC[i] = as.numeric(mlstdata_index$clonal_complex)
+      data_cc$ST[i] = as.character(data_cc$Value[i])
+      data_cc$CC[i] = as.character(mlstdata_index$clonal_complex)
     }
   }
   
   
   #mrsa15
   if(grepl("a15", data_cc$Value[i])){
-    data_cc$ST[i] = 22
-    data_cc$CC[i] = 22
+    data_cc$ST[i] = "22"
+    data_cc$CC[i] = "22"
   }
   
   
   #mrsa16
   if(grepl("a16", data_cc$Value[i])){
-    data_cc$ST[i] = 36
-    data_cc$CC[i] = 30
+    data_cc$ST[i] = "36"
+    data_cc$CC[i] = "30"
   }
   
   
 }
 
-data_cc$CC[is.na(data_cc$CC)] = 0
-data_cc$ST[is.na(data_cc$ST)] = 0
+data_cc$CC[is.na(data_cc$CC)] = "None"
+data_cc$CC[data_cc$CC == ""] = "None"
+
+data_cc$ST[is.na(data_cc$ST)] = "None"
 
 #adding STs that are not CCs
-data_cc$CC[data_cc$ST != 0 & data_cc$CC == 0] = paste0("ST", data_cc$ST[data_cc$ST != 0 & data_cc$CC == 0])
+data_cc$CC[data_cc$ST != "None" & data_cc$CC == "None"] = paste0("ST",
+                                                              data_cc$ST[data_cc$ST != "None" & 
+                                                                           data_cc$CC == "None"])
 
-sum(data_cc$ST == "0")/nrow(data_cc)*100
+100 - (sum(data_cc$ST == "None")/nrow(data_cc)*100)
+data_cc %>% filter(ST == "None") %>% select(Value) %>% table %>% sort(.,decreasing = T)
 
 write.csv(data_cc, here::here("Clean", "typing_data.csv"), row.names = F)
 

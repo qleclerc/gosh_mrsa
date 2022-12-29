@@ -15,6 +15,8 @@ library(zoo)
 mrsa_col = "#EFC000FF"
 mssa_col = "#0073C2FF"
 
+cpalette = c(RColorBrewer::brewer.pal(12, "Paired"), "black")
+
 staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>% 
   mutate(date = as_date(date))
 
@@ -67,7 +69,7 @@ p2 = staph_isolates %>%
 #CCs
 p3 = typing_data %>%
   mutate(CC = replace(CC, grepl("ST", CC), "Other")) %>%
-  filter(CC != "0") %>%
+  filter(CC != "None") %>%
   select(project_id, start_datetime, CC) %>%
   distinct() %>%
   mutate(start_datetime = floor_date(start_datetime, "year")) %>%
@@ -81,7 +83,7 @@ p3 = typing_data %>%
               group_by(start_datetime) %>%
               summarise(total = sum(n)),
             aes(start_datetime, total, label = total), vjust = -0.5) +
-  scale_fill_brewer(palette = "Paired") +
+  scale_fill_manual(values = cpalette) +
   theme(axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         legend.text = element_text(size = 12),

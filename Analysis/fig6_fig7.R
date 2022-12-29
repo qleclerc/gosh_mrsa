@@ -346,7 +346,7 @@ mrsa_changes %>% filter(any_antibiotic == T) %>% select(project_id) %>% pull %>%
 median(mrsa_changes$los)
 quantile(mrsa_changes$los)
 
-admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
+admissions = read.csv(here::here("Clean", "combined_admissions.csv")) %>%
   mutate(start_datetime = as_date(start_datetime)) %>%
   mutate(end_datetime = as_date(end_datetime)) %>%
   arrange(project_id, start_datetime) %>%
@@ -434,7 +434,12 @@ res_profiles_changes = res_profiles_diversity %>%
   filter(delay > 2)
 
 length(unique(res_profiles_changes$project_id))
+res_profiles_changes %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
 
+#mystery changes
 res_profiles_changes %>%
   filter(possible_nos == 0) %>%
   filter(antibiotic_use == F) %>%
@@ -442,6 +447,8 @@ res_profiles_changes %>%
   summarise(n = n()) %>%
   nrow
 
+
+
 res_profiles_changes %>%
   filter(species == "Methicillin-Resistant Staphylococcus aureus") %>%
   select(project_id) %>% pull %>% unique %>% length
@@ -500,6 +507,11 @@ res_profiles_changes %>%
   group_by(project_id, first_lab_id) %>%
   summarise(n = n()) %>%
   nrow
+
+#mystery changes
+res_profiles_changes %>%
+  filter(antibiotic_use == F,
+         same_hosp == T)
 
 nrow(res_profiles_changes)
 length(unique(res_profiles_changes$project_id)) #number of patients

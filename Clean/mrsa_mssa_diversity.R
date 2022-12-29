@@ -25,7 +25,7 @@ interesting_samples = c()
 for(i in 1:(nrow(staph_isolates_profiles)-1)){
   
   if(staph_isolates_profiles$project_id[i] != staph_isolates_profiles$project_id[i+1]) next
-
+  
   if(staph_isolates_profiles$SpeciesName[i] != staph_isolates_profiles$SpeciesName[i+1]){
     interesting_samples = c(interesting_samples,
                             staph_isolates_profiles$CultureIsoID[i],
@@ -46,7 +46,7 @@ profile_changes = data.frame(project_id = "test_id",
 for(i in 1:(nrow(changing_profiles)-1)){
   
   if(changing_profiles$project_id[i] != changing_profiles$project_id[i+1]) next
-
+  
   #rechecking as sometimes multiple samples with same lab id, but no change
   #eg sample 1 mssa, sample 2 mssa and mrsa, don't want to record mssa -> mssa change
   if(changing_profiles$SpeciesName[i] != changing_profiles$SpeciesName[i+1]){
@@ -69,6 +69,15 @@ profile_changes = profile_changes[-1,]
 #need to look whether events are during a single hospitalisation event, or if 
 # patients were discharged in the meantime
 #if discharged in the meantime, reinfection by someone else would be an explanation
+
+combined_admissions = read.csv(here::here("Clean", "combined_admissions.csv")) %>%
+  mutate(start_datetime = as_date(start_datetime)) %>%
+  mutate(end_datetime = as_date(end_datetime)) %>%
+  arrange(project_id, start_datetime) %>%
+  filter(project_id %in% unique(profile_changes$project_id)) %>%
+  filter(!is.na(start_datetime)) %>%
+  filter(!is.na(end_datetime))
+
 admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
   mutate(start_datetime = as_date(start_datetime)) %>%
   mutate(end_datetime = as_date(end_datetime)) %>%
@@ -82,7 +91,7 @@ profile_changes$los = 0
 
 for(i in 1:nrow(profile_changes)){
   
-  admissions_i = admissions %>%
+  admissions_i = combined_admissions %>%
     filter(project_id == profile_changes$project_id[i])
   
   if(dim(admissions_i)[1] == 0) next
@@ -118,18 +127,27 @@ for(i in 1:(nrow(profile_changes))){
   #which hospitals admissions are recorded for patient i
   hosp_i = admissions %>%
     filter(project_id == profile_changes$project_id[i]) %>%
-    mutate(valid = (profile_changes$second_date[i] %within% interval(start_datetime, end_datetime))) %>%
+    mutate(valid = int_overlaps(interval(profile_changes$first_date[i], profile_changes$second_date[i]),
+                                interval(start_datetime, end_datetime))) %>%
     filter(valid == T)
   
   if(nrow(hosp_i) == 0) next
   
-  #which other patients were also present in same ward as patient i within the last 30 days
-  hosp_j = admissions %>%
-    filter(ward_code == hosp_i$ward_code[1]) %>%
-    mutate(valid = int_overlaps(interval(start_datetime, end_datetime),
-                                interval(profile_changes$first_date[i], profile_changes$second_date[i]))) %>%
-    filter(valid == T) %>%
-    filter(project_id != profile_changes$project_id[i])
+  hosp_j = data.frame()
+  
+  for(hosp_step in c(1:nrow(hosp_i))){
+    
+    #which other patients were also present in same ward as patient i within the last 30 days
+    hosp_j = rbind(hosp_j,
+                   admissions %>%
+      filter(ward_code == hosp_i$ward_code[hosp_step]) %>%
+      mutate(valid = int_overlaps(interval(start_datetime, end_datetime),
+                                  interval(hosp_i$start_datetime[hosp_step],
+                                           hosp_i$end_datetime[hosp_step]))) %>%
+      filter(valid == T) %>%
+      filter(project_id != profile_changes$project_id[i]))
+    
+  }
   
   if(nrow(hosp_j) == 0) next
   
@@ -148,7 +166,7 @@ for(i in 1:(nrow(profile_changes))){
   sample_i = profile_changes$change[i]
   
   profile_changes$possible_nos[i] = profile_changes$possible_nos[i] + sum(test_samples == sample_i)
-  profile_changes$possible_nos_ward[i] = hosp_i$ward_code[1]
+  #profile_changes$possible_nos_ward[i] = hosp_i$ward_code[1]
   
 }
 
