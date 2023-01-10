@@ -130,14 +130,14 @@ noabxchange = res_profiles_diversity %>%
 # nochange$any_abx = FALSE
 # 
 # for(i in 1:nrow(nochange)){
-#   
+# 
 #   if(nrow(antibio_data %>%
 #           filter(project_id == nochange$project_id[i]) %>%
 #           filter(date %within% interval(nochange$date[i], nochange$date[i]+60))) > 0) nochange$any_abx[i] = T
-#   
+# 
 # }
 # 
-# write.csv(nochange, here::here("Clean", "antibiotic_post_isolate.csv"), row.names = F)  
+# write.csv(nochange, here::here("Clean", "antibiotic_post_isolate.csv"), row.names = F)
 
 nochange = read.csv(here::here("Clean", "antibiotic_post_isolate.csv"))
 

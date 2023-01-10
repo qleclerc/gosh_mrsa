@@ -300,7 +300,7 @@ mrsa_mssa_diversity %>%
 mrsa_mssa_diversity %>%
   filter(same_date == F) %>%
   nrow
-#changes from mssa to mrsa
+#changes from mrsa to mssa
 mrsa_mssa_diversity %>%
   filter(same_date == F & change == "Methicillin-Susceptible Staphylococcus aureus") %>%
   nrow
@@ -308,7 +308,7 @@ mrsa_mssa_diversity %>%
   filter(same_date == F & change == "Methicillin-Susceptible Staphylococcus aureus") %>%
   select(project_id) %>% pull %>% unique %>% length
 
-#changes from mrsa to mssa
+#changes from mssa to mrsa
 mrsa_mssa_diversity %>%
   filter(same_date == F & change == "Methicillin-Resistant Staphylococcus aureus") %>%
   nrow
@@ -371,6 +371,10 @@ pa = ggplot(mrsa_changes) +
         axis.title = element_text(size = 12))
 
 #changes from mssa to mrsa, potential nosocomial
+mrsa_changes %>%
+  filter(possible_nos == 0) %>%
+  select(project_id) %>%
+  pull %>% unique %>% length
 mrsa_changes = mrsa_changes %>%
   filter(possible_nos > 0)
 
@@ -443,6 +447,16 @@ res_profiles_changes %>%
 res_profiles_changes %>%
   filter(possible_nos == 0) %>%
   filter(antibiotic_use == F) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_changes %>%
+  filter(possible_nos > 0) %>%
+  group_by(project_id, first_lab_id) %>%
+  summarise(n = n()) %>%
+  nrow
+res_profiles_changes %>%
+  filter(antibiotic_use == T) %>%
   group_by(project_id, first_lab_id) %>%
   summarise(n = n()) %>%
   nrow
