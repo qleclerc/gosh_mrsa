@@ -343,8 +343,8 @@ table(mrsa_changes$delay)
 mrsa_changes %>% filter(any_antibiotic == T) %>% nrow()
 mrsa_changes %>% filter(any_antibiotic == T) %>% select(project_id) %>% pull %>% unique %>% length
 
-median(mrsa_changes$los)
-quantile(mrsa_changes$los)
+median(mrsa_changes %>% select(project_id, los) %>% distinct() %>% select(los) %>% pull)
+quantile(mrsa_changes %>% select(project_id, los) %>% distinct() %>% select(los) %>% pull)
 
 admissions = read.csv(here::here("Clean", "combined_admissions.csv")) %>%
   mutate(start_datetime = as_date(start_datetime)) %>%

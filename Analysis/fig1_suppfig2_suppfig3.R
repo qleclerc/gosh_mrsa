@@ -77,6 +77,7 @@ p3 = typing_data %>%
   summarise(n = n()) %>%
   ggplot() +
   geom_col(aes(start_datetime, n, fill = CC), position = "stack") +
+  geom_vline(xintercept = as.Date("2010-07-01"), linetype = 2, colour = "red4", size = 1) +
   theme_bw() +
   labs(y = "Number of typed isolates", x = "Year") +
   geom_text(data = . %>%
@@ -92,7 +93,7 @@ p3 = typing_data %>%
                                   "2006-01-01", "2008-01-01", "2010-01-01",
                                   "2012-01-01", "2014-01-01", "2016-01-01",
                                   "2018-01-01", "2020-01-01")), date_labels = "%Y",
-               limits = as.Date(c("1999-06-01", "2021-08-01"))) +
+               limits = as.Date(c("1999-06-01", "2021-07-01"))) +
   scale_y_continuous(limits = c(0, 250))
 
 
@@ -130,7 +131,7 @@ staph_isolates %>%
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
   scale_colour_manual(values = c(mrsa_col, mssa_col))
 
-ggsave(here::here("Figures", "suppfig1.png"))
+ggsave(here::here("Figures", "suppfig2.png"))
 
 
 # ethnicity
@@ -197,7 +198,7 @@ p2 = staph_isolates %>%
 
 plot_grid(p2, p1, ncol = 1, labels = c("a)", "b)"), hjust = 0)
 
-ggsave(here::here("Figures", "suppfig2.png"))
+ggsave(here::here("Figures", "suppfig3.png"))
 
 
 

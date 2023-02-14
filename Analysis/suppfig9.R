@@ -108,7 +108,7 @@ antibio_data %>%
         axis.title = element_text(size = 12)) +
   labs(x = "", y = "Proportion of patients exposed to antibiotic")
 
-ggsave(here::here("Figures", "suppfig7.png"))
+ggsave(here::here("Figures", "suppfig9.png"))
 
 
 #patients with change in a hosp, who had any abx

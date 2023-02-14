@@ -201,4 +201,4 @@ sp1 = ggplot(all_isolates) +
         legend.position = "bottom",
         axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
-ggsave(here::here("Figures", "suppfig6.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig7.png"), sp1, height = 12, width = 12)

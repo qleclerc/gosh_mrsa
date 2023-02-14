@@ -134,7 +134,7 @@ sp1 = staph_resistances %>%
                       labels = c("Methicillin-Resistant *Staphylococcus aureus*",
                                  "Methicillin-Susceptible *Staphylococcus aureus*"))
 
-ggsave(here::here("Figures", "suppfig5.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig6.png"), sp1, height = 12, width = 12)
 
 
 #supp correlations
@@ -162,7 +162,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig3.png"), width = 1100, height = 700)
+png(here::here("Figures", "suppfig4.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()
@@ -188,7 +188,7 @@ cor_res$P[which(cor_res$P != 1)] = 0
 
 cor_res$r = cor_res$r * cor_res$P
 
-png(here::here("Figures", "suppfig4.png"), width = 1100, height = 700)
+png(here::here("Figures", "suppfig5.png"), width = 1100, height = 700)
 corrplot(cor_res$r,
          method = "number", type = "upper", order = "hclust", tl.col = 'black', cl.cex = 1)
 dev.off()
