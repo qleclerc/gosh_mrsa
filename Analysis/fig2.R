@@ -63,8 +63,8 @@ p2 = staph_isolates %>%
   scale_colour_manual(values = c(mrsa_col, mssa_col),
                       breaks = c("Methicillin-Resistant Staphylococcus aureus",
                                  "Methicillin-Susceptible Staphylococcus aureus"),
-                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
-                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+                      labels = c("Methicillin-resistant *Staphylococcus aureus*",
+                                 "Methicillin-susceptible *Staphylococcus aureus*")) +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         legend.text = element_markdown(size=12),

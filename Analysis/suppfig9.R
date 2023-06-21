@@ -3,183 +3,86 @@
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(cowplot)
 
-res_profiles_diversity = read.csv(here::here("Clean", "res_profiles_diversity.csv")) %>%
-  mutate(first_date = as_date(first_date),
-         second_date = as_date(second_date))
+admissions = read.csv(here::here("Clean", "combined_admissions.csv")) %>%
+  mutate(start_datetime = as_date(start_datetime)) %>%
+  mutate(end_datetime = as_date(end_datetime)) %>%
+  arrange(project_id, start_datetime) %>%
+  filter(!is.na(start_datetime)) %>%
+  filter(!is.na(end_datetime)) %>%
+  mutate(delay = end_datetime - start_datetime) %>%
+  filter(delay > 2)
 
-staph_isolates = read.csv(here::here("Clean", "staph_isolates.csv")) %>%
-  mutate(date = as_date(date))
+median(admissions$delay)
+quantile(admissions$delay)
+
+pa = ggplot(admissions) +
+  geom_histogram(aes(delay, y = after_stat(density)), binwidth = 1, colour = "white") +
+  geom_vline(aes(xintercept = median(delay)), linetype = "dashed", linewidth = 1) +
+  scale_x_continuous(breaks = seq(0,120,20)) + 
+  coord_cartesian(xlim = c(0,80)) +
+  theme_bw() +
+  labs(x = "Hospital length of stay (days)", y = "Proportion") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
+
+table(admissions$delay>80)/nrow(admissions)
 
 mrsa_mssa_diversity = read.csv(here::here("Clean", "mrsa_mssa_diversity.csv")) %>%
   mutate(first_date = as_date(first_date),
          second_date = as_date(second_date))
 
-mrsanoabx = table(mrsa_mssa_diversity %>%
-                    filter(change == "Methicillin-Resistant Staphylococcus aureus") %>%
-                    filter(same_hosp == T) %>%
-                    mutate(delay = as.numeric(second_date-first_date)) %>%
-                    filter(delay > 2) %>%
-                    select(any_antibiotic) %>% pull)[1]
-mrsaabx = table(mrsa_mssa_diversity %>%
-                  filter(change == "Methicillin-Resistant Staphylococcus aureus") %>%
-                  filter(same_hosp == T) %>%
-                  mutate(delay = as.numeric(second_date-first_date)) %>%
-                  filter(delay > 2) %>%
-                  select(any_antibiotic) %>% pull)[2]
-
-mssanoabx = table(mrsa_mssa_diversity %>%
-                    filter(change == "Methicillin-Susceptible Staphylococcus aureus") %>%
-                    filter(same_hosp == T) %>%
-                    mutate(delay = as.numeric(second_date-first_date)) %>%
-                    filter(delay > 2) %>%
-                    select(any_antibiotic) %>% pull)[1]
-mssaabx = table(mrsa_mssa_diversity %>%
-                  filter(change == "Methicillin-Susceptible Staphylococcus aureus") %>%
-                  filter(same_hosp == T) %>%
-                  mutate(delay = as.numeric(second_date-first_date)) %>%
-                  filter(delay > 2) %>%
-                  select(any_antibiotic) %>% pull)[2]
-
-chisq.test(matrix(c(mrsanoabx,mrsaabx,
-                    mssanoabx,mssaabx),
-                  byrow = T, nrow = 2))
-
-mrsaabx/(mrsaabx+mrsanoabx)
-mssaabx/(mssaabx+mssanoabx)
-
-
-equivalence_table = read.csv(here::here("Clean", "equivalence_table.csv"))[,-1]
-colnames(equivalence_table)[1] = "antibiotic"
-equivalence_table$antibiotic[equivalence_table$antibiotic == "Fusidic_acid"] = "Fucidin"
-equivalence_table$antibiotic[equivalence_table$antibiotic == "Co-Trimoxazole"] = "Cotrimoxazole"
-
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Gent.Cipro", "class" = "Aminoglycoside"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Amik.Fluclox", "class" = "Aminoglycoside"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Piperacillin...Tazobactam", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Pip.Taz.Cipro", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Penicillin", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Neomycin", "class" = "Aminoglycoside"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Cephradine", "class" = "Cephalosporin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Syncercid", "class" = "Streptogramin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Augmentin", "class" = "Penicillin"))
-equivalence_table = rbind(equivalence_table,
-                          c("antibiotic" = "Naladixic.Acid", "class" = "Fluoroquinolone"))
-
-antibio_data = read.csv(here::here("Clean", "antibio_data.csv")) %>%
-  mutate(date = as_date(start_datetime)) %>%
-  filter(class %in% c("Aminoglycoside", "Carbapenem", "Cephalosporin",
-                      "Fluoroquinolone", "Fosfomycin", "Fusidic_acid",
-                      "Glycopeptide", "Lincosamide", "Macrolide", "Metronidazole",
-                      "Nitrofuran", "Penicillin", "Polypeptide", "Sulfonamide",
-                      "Tetracycline", "Rifamycin"))
-
-admissions = read.csv(here::here("Data", "combined_patient_ward_stays.csv")) %>%
-  mutate(start_datetime = as_date(start_datetime)) %>%
-  mutate(end_datetime = as_date(end_datetime)) %>%
-  arrange(project_id, start_datetime) %>%
-  filter(project_id %in% unique(res_profiles_diversity$project_id)) %>%
-  filter(!is.na(start_datetime)) %>%
-  filter(!is.na(end_datetime))
-
-sort(table(antibio_data$class))
-
-antibio_data %>%
-  group_by(class) %>%
-  summarise(n = length(unique(project_id))) %>%
-  arrange(-n) %>%
-  mutate(n = n/22206) %>%
-  mutate(class = replace(class, class == "Fusidic_acid", "Fucidin")) %>%
-  mutate(class = factor(class, levels = class)) %>%
-  ggplot() +
-  geom_col(aes(class, n)) +
-  theme_bw() +
-  theme(axis.text.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.title = element_text(size = 12)) +
-  labs(x = "", y = "Proportion of patients exposed to antibiotic")
-
-ggsave(here::here("Figures", "suppfig9.png"))
-
-
-#patients with change in a hosp, who had any abx
-abxchange = res_profiles_diversity %>%
+mrsa_changes = mrsa_mssa_diversity %>%
+  filter(same_date == F & change == "Methicillin-Resistant Staphylococcus aureus") %>%
   filter(same_hosp == T) %>%
-  filter(any_antibiotic == T) %>%
-  nrow
-#patients with change in a hosp, who had no abx 
-noabxchange = res_profiles_diversity %>%
+  mutate(delay = as.numeric(second_date-first_date)) %>%
+  filter(delay > 2) %>% 
+  select(project_id, los) %>%
+  distinct()
+
+median(mrsa_changes$los)
+
+pb = ggplot(mrsa_changes) +
+  geom_histogram(aes(los, y = 7*after_stat(density)), colour= "white", binwidth = 7) +
+  geom_vline(aes(xintercept = median(los)), linetype = "dashed", linewidth = 1) +
+  scale_x_continuous(breaks = seq(0,700,50)) + 
+  coord_cartesian(xlim = c(0,700)) +
+  theme_bw() +
+  labs(x = "Hospital length of stay (days)", y = "Proportion") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
+
+table(mrsa_changes$los>700)/nrow(mrsa_changes)
+
+mssa_changes = mrsa_mssa_diversity %>%
+  filter(same_date == F & change == "Methicillin-Susceptible Staphylococcus aureus") %>%
   filter(same_hosp == T) %>%
-  filter(any_antibiotic == F) %>%
-  nrow
+  mutate(delay = as.numeric(second_date-first_date)) %>%
+  filter(delay > 2) %>% 
+  select(project_id, los) %>%
+  distinct()
 
-#look for patients with no change who had abx anytime between isolate 1 date and isolate 1 date + 60 days
-#because 60 days is cut off to see vast majority of changes (Fig 7d)
-# nochange = staph_isolates %>%
-#   filter(!project_id %in% unique(res_profiles_diversity$project_id)) %>%
-#   select(project_id, date)
-# nochange$any_abx = FALSE
-# 
-# for(i in 1:nrow(nochange)){
-# 
-#   if(nrow(antibio_data %>%
-#           filter(project_id == nochange$project_id[i]) %>%
-#           filter(date %within% interval(nochange$date[i], nochange$date[i]+60))) > 0) nochange$any_abx[i] = T
-# 
-# }
-# 
-# write.csv(nochange, here::here("Clean", "antibiotic_post_isolate.csv"), row.names = F)
-
-nochange = read.csv(here::here("Clean", "antibiotic_post_isolate.csv"))
-
-#patients with no change, who had any abx
-abxnochange = nochange %>%
-  filter(any_abx == T) %>%
-  nrow
-#patients with no change, who had no abx
-noabxnochange = nochange %>%
-  filter(any_abx == F) %>%
-  nrow
-
-#isolates with/without sus test data x isolates from nose,throat,skin/not
-chisq.test(matrix(c(abxchange,abxnochange,
-                    noabxchange,noabxnochange),
-                  byrow = T, nrow = 2))
-
-abxchange/(abxchange+abxnochange)
-noabxchange/(noabxchange+noabxnochange)
-
-
-antibio_data %>%
-  group_by(project_id) %>%
-  summarise(n = length(unique(class))) %>%
-  select(n) %>%
-  pull %>% table/20000*100
-
-antibio_data %>%
-  mutate(date = floor_date(date, "month")) %>%
-  group_by(date, class) %>%
-  summarise(n = n()) %>%
-  ggplot() +
-  geom_line(aes(date, n, colour = class)) +
+pc = ggplot(mssa_changes) +
+  geom_histogram(aes(los, y = 7*after_stat(density)), colour= "white", binwidth = 7) +
+  geom_vline(aes(xintercept = median(los)), linetype = "dashed", linewidth = 1) +
+  scale_x_continuous(breaks = seq(0,700,50)) + 
+  coord_cartesian(xlim = c(0,700)) +
   theme_bw() +
-  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
+  labs(x = "Hospital length of stay (days)", y = "Proportion") +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
 
-antibio_data %>%
-  filter(class == "Fluoroquinolone") %>%
-  mutate(date = floor_date(date, "month")) %>%
-  group_by(date) %>%
-  summarise(n = n()) %>%
-  ggplot() +
-  geom_line(aes(date, n)) +
-  theme_bw() +
-  scale_x_date(date_breaks = "2 years", date_labels = "%Y")
+median(mssa_changes$los)
+
+table(mssa_changes$los>700)/nrow(mssa_changes)
+
+plot_grid(NULL,pa,NULL,pb,NULL,pc,
+          ncol = 1,
+          rel_heights = c(0.1,1,0.05,1,0.05,1),
+          labels = c("","a) All patients", "",
+                     "b) Patients with changes from MSSA to MRSA", "",
+                     "c) Patients with changes from MRSA to MSSA"),
+          hjust = 0, vjust=0)
+
+ggsave(here::here("Figures", "suppfig9.png"), height = 6)

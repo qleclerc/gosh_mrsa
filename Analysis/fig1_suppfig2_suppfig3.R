@@ -60,8 +60,8 @@ p2 = staph_isolates %>%
   scale_colour_manual(values = c(mrsa_col, mssa_col),
                       breaks = c("Methicillin-Resistant Staphylococcus aureus",
                                  "Methicillin-Susceptible Staphylococcus aureus"),
-                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
-                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+                      labels = c("Methicillin-resistant *Staphylococcus aureus*",
+                                 "Methicillin-susceptible *Staphylococcus aureus*")) +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         legend.text = element_markdown(size=12))
@@ -127,10 +127,14 @@ staph_isolates %>%
   theme(legend.position = "bottom",
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
-        legend.text = element_text(size = 12)) +
+        legend.text = element_markdown(size = 12)) +
   scale_x_date(date_breaks = "2 years", date_labels = "%Y") +
-  scale_colour_manual(values = c(mrsa_col, mssa_col))
-
+  scale_colour_manual(values = c(mrsa_col, mssa_col),
+                      breaks = c("Methicillin-Resistant Staphylococcus aureus",
+                                 "Methicillin-Susceptible Staphylococcus aureus"),
+                      labels = c("Methicillin-resistant *Staphylococcus aureus*",
+                                 "Methicillin-susceptible *Staphylococcus aureus*"))
+  
 ggsave(here::here("Figures", "suppfig2.png"))
 
 

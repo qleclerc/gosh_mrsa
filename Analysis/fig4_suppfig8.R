@@ -71,8 +71,8 @@ p1 = ggplot(all_isolates %>%
   scale_colour_manual(values = c(mrsa_col, mssa_col),
                       breaks = c("Methicillin-Resistant Staphylococcus aureus",
                                  "Methicillin-Susceptible Staphylococcus aureus"),
-                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
-                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+                      labels = c("Methicillin-resistant *Staphylococcus aureus*",
+                                 "Methicillin-susceptible *Staphylococcus aureus*")) +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         strip.text = element_text(size = 12),
@@ -192,8 +192,8 @@ sp1 = ggplot(all_isolates) +
   scale_colour_manual(values = c(mrsa_col, mssa_col),
                       breaks = c("Methicillin-Resistant Staphylococcus aureus",
                                  "Methicillin-Susceptible Staphylococcus aureus"),
-                      labels = c("Methicillin-Resistant *Staphylococcus aureus*",
-                                 "Methicillin-Susceptible *Staphylococcus aureus*")) +
+                      labels = c("Methicillin-resistant *Staphylococcus aureus*",
+                                 "Methicillin-susceptible *Staphylococcus aureus*")) +
   theme(axis.text = element_text(size=12),
         axis.title = element_text(size=12),
         strip.text = element_text(size = 8),
@@ -201,4 +201,4 @@ sp1 = ggplot(all_isolates) +
         legend.position = "bottom",
         axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 
-ggsave(here::here("Figures", "suppfig7.png"), sp1, height = 12, width = 12)
+ggsave(here::here("Figures", "suppfig8.png"), sp1, height = 12, width = 12)
